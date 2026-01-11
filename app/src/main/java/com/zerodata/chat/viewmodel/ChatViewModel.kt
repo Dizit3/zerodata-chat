@@ -7,6 +7,7 @@ import com.zerodata.chat.network.MqttManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 class ChatViewModel(
@@ -22,7 +23,9 @@ class ChatViewModel(
         viewModelScope.launch {
             mqttManager.observeMessages().collect { newMessage ->
                 if (newMessage.chatId == chatId || newMessage.senderId == chatId) {
-                    _messages.value = _messages.value + newMessage
+                    val currentList = _messages.value.toMutableList()
+                    currentList.add(newMessage)
+                    _messages.value = currentList
                 }
             }
         }
@@ -35,7 +38,9 @@ class ChatViewModel(
             receiverId = chatId,
             text = text
         )
-        _messages.value = _messages.value + newMessage
+        val currentList = _messages.value.toMutableList()
+        currentList.add(newMessage)
+        _messages.value = currentList
         
         viewModelScope.launch {
             mqttManager.sendMessage(newMessage)

@@ -8,6 +8,7 @@ import com.zerodata.chat.network.MqttManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 class MainViewModel(private val mqttManager: MqttManager) : ViewModel() {
@@ -27,17 +28,17 @@ class MainViewModel(private val mqttManager: MqttManager) : ViewModel() {
     }
 
     private fun handleIncomingMessage(message: Message) {
-        val existingChat = _chats.value.find { it.id == message.chatId }
+        val existingChat = _chats.value.find { chat -> chat.id == message.chatId }
         
         if (existingChat != null) {
             // Обновляем существующий чат последним сообщением
-            _chats.value = _chats.value.map {
-                if (it.id == message.chatId) {
-                    it.copy(
+            _chats.value = _chats.value.map { chat ->
+                if (chat.id == message.chatId) {
+                    chat.copy(
                         lastMessage = message,
-                        unreadCount = it.unreadCount + 1
+                        unreadCount = chat.unreadCount + 1
                     )
-                } else it
+                } else chat
             }
         } else {
             // Создаем новый чат
@@ -47,12 +48,14 @@ class MainViewModel(private val mqttManager: MqttManager) : ViewModel() {
                 lastMessage = message,
                 unreadCount = 1
             )
-            _chats.value = _chats.value + newChat
+            val updatedList = _chats.value.toMutableList()
+            updatedList.add(newChat)
+            _chats.value = updatedList
         }
     }
 
     fun createChat(recipientId: String) {
-        if (_chats.value.any { it.id == recipientId }) return
+        if (_chats.value.any { chat -> chat.id == recipientId }) return
         
         val newChat = Chat(
             id = recipientId,
@@ -60,12 +63,14 @@ class MainViewModel(private val mqttManager: MqttManager) : ViewModel() {
             lastMessage = null,
             unreadCount = 0
         )
-        _chats.value = _chats.value + newChat
+        val updatedList = _chats.value.toMutableList()
+        updatedList.add(newChat)
+        _chats.value = updatedList
     }
     
     fun clearUnread(chatId: String) {
-        _chats.value = _chats.value.map {
-            if (it.id == chatId) it.copy(unreadCount = 0) else it
+        _chats.value = _chats.value.map { chat ->
+            if (chat.id == chatId) chat.copy(unreadCount = 0) else chat
         }
     }
 }
