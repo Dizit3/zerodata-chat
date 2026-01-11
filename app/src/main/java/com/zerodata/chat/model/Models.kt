@@ -3,7 +3,7 @@ package com.zerodata.chat.model
 import java.util.UUID
 
 /**
- * Модель сообщения в чате.
+ * Модель сообщения в чате
  */
 data class Message(
     val id: String = UUID.randomUUID().toString(),
