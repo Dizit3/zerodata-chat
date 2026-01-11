@@ -9,6 +9,7 @@
     <uses-permission android:name="android.permission.SEND_SMS" />
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_REMOTE_MESSAGING" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
@@ -31,6 +32,7 @@
         
         <service
             android:name="info.mqtt.android.service.MqttService"
+            android:foregroundServiceType="remoteMessaging"
             android:enabled="true" />
             
         <activity
