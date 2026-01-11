@@ -70,7 +70,7 @@ fun ChatListScreen(
                             Box(
                                 modifier = Modifier
                                     .size(8.dp)
-                                    .clip(CircleCornerShape)
+                                    .clip(CircleShape)
                                     .background(if (connectionStatus) Color(0xFF4CAF50) else Color(0xFFF44336))
                             )
                         }
@@ -101,7 +101,7 @@ fun ChatListScreen(
         ) {
             items(chats) { chat ->
                 ChatItem(chat = chat, onClick = { onChatClick(chat.id) })
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.White.copy(alpha = 0.1f))
+                Divider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.White.copy(alpha = 0.1f))
             }
         }
     }
@@ -120,7 +120,7 @@ fun ChatItem(chat: Chat, onClick: () -> Unit) {
         Box(
             modifier = Modifier
                 .size(50.dp)
-                .clip(CircleCornerShape)
+                .clip(CircleShape)
                 .background(
                     Brush.linearGradient(
                         listOf(Color(0xFF2196F3), Color(0xFF00BCD4))
@@ -157,7 +157,7 @@ fun ChatItem(chat: Chat, onClick: () -> Unit) {
             Box(
                 modifier = Modifier
                     .size(20.dp)
-                    .clip(CircleCornerShape)
+                    .clip(CircleShape)
                     .background(Color(0xFF2196F3)),
                 contentAlignment = Alignment.Center
             ) {
