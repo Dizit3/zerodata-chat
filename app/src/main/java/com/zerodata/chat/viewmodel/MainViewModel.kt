@@ -21,18 +21,18 @@ class MainViewModel(private val mqttManager: MqttManager) : ViewModel() {
     init {
         viewModelScope.launch {
             mqttManager.connect()
-            mqttManager.observeMessages().collect { message ->
+            mqttManager.observeMessages().collect { message: Message ->
                 handleIncomingMessage(message)
             }
         }
     }
 
     private fun handleIncomingMessage(message: Message) {
-        val existingChat = _chats.value.find { chat -> chat.id == message.chatId }
+        val existingChat = _chats.value.find { chat: Chat -> chat.id == message.chatId }
         
         if (existingChat != null) {
             // Обновляем существующий чат последним сообщением
-            _chats.value = _chats.value.map { chat ->
+            _chats.value = _chats.value.map { chat: Chat ->
                 if (chat.id == message.chatId) {
                     chat.copy(
                         lastMessage = message,
@@ -55,7 +55,7 @@ class MainViewModel(private val mqttManager: MqttManager) : ViewModel() {
     }
 
     fun createChat(recipientId: String) {
-        if (_chats.value.any { chat -> chat.id == recipientId }) return
+        if (_chats.value.any { chat: Chat -> chat.id == recipientId }) return
         
         val newChat = Chat(
             id = recipientId,
@@ -69,7 +69,7 @@ class MainViewModel(private val mqttManager: MqttManager) : ViewModel() {
     }
     
     fun clearUnread(chatId: String) {
-        _chats.value = _chats.value.map { chat ->
+        _chats.value = _chats.value.map { chat: Chat ->
             if (chat.id == chatId) chat.copy(unreadCount = 0) else chat
         }
     }

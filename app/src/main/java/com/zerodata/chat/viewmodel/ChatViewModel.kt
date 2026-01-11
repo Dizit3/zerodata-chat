@@ -21,7 +21,7 @@ class ChatViewModel(
 
     init {
         viewModelScope.launch {
-            mqttManager.observeMessages().collect { newMessage ->
+            mqttManager.observeMessages().collect { newMessage: Message ->
                 if (newMessage.chatId == chatId || newMessage.senderId == chatId) {
                     val currentList = _messages.value.toMutableList()
                     currentList.add(newMessage)
