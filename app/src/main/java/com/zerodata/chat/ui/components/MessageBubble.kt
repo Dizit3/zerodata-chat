@@ -20,41 +20,50 @@ fun MessageBubble(message: Message, isMine: Boolean) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(horizontal = 12.dp, vertical = 4.dp),
         horizontalAlignment = if (isMine) Alignment.End else Alignment.Start
     ) {
-        Box(
-            modifier = Modifier
-                .background(
-                    color = if (isMine) Color(0xFFEFFDDE) else Color.White,
-                    shape = RoundedCornerShape(
-                        topStart = 12.dp,
-                        topEnd = 12.dp,
-                        bottomStart = if (isMine) 12.dp else 0.dp,
-                        bottomEnd = if (isMine) 0.dp else 12.dp
-                    )
-                )
-                .padding(8.dp)
-                .widthIn(max = 280.dp)
+        val bubbleColor = if (isMine) Color(0xFF2196F3) else Color(0xFF2C2C2E)
+        val textColor = Color.White
+
+        Surface(
+            color = bubbleColor,
+            shape = RoundedCornerShape(
+                topStart = 16.dp,
+                topEnd = 16.dp,
+                bottomStart = if (isMine) 16.dp else 4.dp,
+                bottomEnd = if (isMine) 4.dp else 16.dp
+            ),
+            shadowElevation = 2.dp
         ) {
-            Column {
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                    .widthIn(max = 260.dp)
+            ) {
                 Text(
                     text = message.text,
-                    color = Color.Black,
-                    fontSize = 16.sp
+                    color = textColor,
+                    fontSize = 15.sp,
+                    lineHeight = 20.sp
                 )
-                Text(
-                    text = formatTime(message.timestamp),
-                    color = Color.Gray,
-                    fontSize = 11.sp,
-                    modifier = Modifier.align(Alignment.End)
-                )
+                
+                Row(
+                    modifier = Modifier.align(Alignment.End),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = formatTime(message.timestamp),
+                        color = textColor.copy(alpha = 0.5f),
+                        fontSize = 10.sp
+                    )
+                }
             }
         }
     }
 }
 
 fun formatTime(timestamp: Long): String {
-    // В реальном приложении здесь будет SimpleDateFormat
-    return "12:00" 
+    val sdf = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+    return sdf.format(java.util.Date(timestamp))
 }

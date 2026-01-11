@@ -9,25 +9,30 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class ChatViewModel(private val mqttManager: MqttManager) : ViewModel() {
+class ChatViewModel(
+    private val mqttManager: MqttManager,
+    private val chatId: String,
+    private val currentUserId: String
+) : ViewModel() {
     
     private val _messages = MutableStateFlow<List<Message>>(emptyList())
     val messages: StateFlow<List<Message>> = _messages.asStateFlow()
 
     init {
         viewModelScope.launch {
-            mqttManager.connect()
             mqttManager.observeMessages().collect { newMessage ->
-                _messages.value = _messages.value + newMessage
+                if (newMessage.chatId == chatId || newMessage.senderId == chatId) {
+                    _messages.value = _messages.value + newMessage
+                }
             }
         }
     }
 
     fun sendMessage(text: String) {
         val newMessage = Message(
-            chatId = "main_chat",
-            senderId = "me",
-            receiverId = "test_receiver", // Временно для тестов
+            chatId = chatId,
+            senderId = currentUserId,
+            receiverId = chatId,
             text = text
         )
         _messages.value = _messages.value + newMessage

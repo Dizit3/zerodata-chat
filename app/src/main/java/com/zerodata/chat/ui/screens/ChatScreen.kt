@@ -13,9 +13,16 @@ import androidx.compose.ui.unit.dp
 import com.zerodata.chat.model.Message
 import com.zerodata.chat.ui.components.MessageBubble
 
+import androidx.compose.material.icons.filled.ArrowBack
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatScreen(userId: String, messages: List<Message>, onSendMessage: (String) -> Unit) {
+fun ChatScreen(
+    userId: String,
+    messages: List<Message>,
+    onSendMessage: (String) -> Unit,
+    onBack: () -> Unit
+) {
     var textState by remember { mutableStateOf("") }
 
     Scaffold(
@@ -23,29 +30,37 @@ fun ChatScreen(userId: String, messages: List<Message>, onSendMessage: (String) 
             TopAppBar(
                 title = { 
                     Column {
-                        Text("ZeroData Chat")
-                        Text("My ID: $userId", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.7f))
+                        Text("Чат", fontWeight = FontWeight.Bold)
+                        Text("ID: $userId", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.7f))
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад", tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF517DA2),
+                    containerColor = Color(0xFF1A1A1A),
                     titleContentColor = Color.White
                 )
             )
         },
+        // ... bottomBar remains same
         bottomBar = {
             BottomAppBar(
-                containerColor = Color.White,
+                containerColor = Color(0xFF1E1E1E),
                 contentPadding = PaddingValues(horizontal = 8.dp)
             ) {
                 TextField(
                     value = textState,
                     onValueChange = { textState = it },
                     modifier = Modifier.weight(1f),
-                    placeholder = { Text("Сообщение...") },
+                    placeholder = { Text("Сообщение...", color = Color.White.copy(alpha = 0.4f)) },
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White
                     )
                 )
                 IconButton(onClick = {
@@ -54,7 +69,7 @@ fun ChatScreen(userId: String, messages: List<Message>, onSendMessage: (String) 
                         textState = ""
                     }
                 }) {
-                    Icon(Icons.Default.Send, contentDescription = "Send", tint = Color(0xFF517DA2))
+                    Icon(Icons.Default.Send, contentDescription = "Send", tint = Color(0xFF2196F3))
                 }
             }
         }
@@ -62,11 +77,12 @@ fun ChatScreen(userId: String, messages: List<Message>, onSendMessage: (String) 
         LazyColumn(
             modifier = Modifier
                 .padding(padding)
-                .fillMaxSize(),
+                .fillMaxSize()
+                .background(Color(0xFF121212)),
             reverseLayout = true
         ) {
             items(messages.reversed()) { msg ->
-                MessageBubble(message = msg, isMine = msg.senderId == "me")
+                MessageBubble(message = msg, isMine = msg.senderId == userId)
             }
         }
     }
