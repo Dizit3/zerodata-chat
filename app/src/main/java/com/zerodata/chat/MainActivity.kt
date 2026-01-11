@@ -11,10 +11,14 @@ import com.zerodata.chat.ui.screens.ChatScreen
 import com.zerodata.chat.viewmodel.ChatViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.zerodata.chat.util.GlobalExceptionHandler
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Включаем "улавливатель" всех вылетов
+        GlobalExceptionHandler.initialize(applicationContext)
         
         // В реальности ID пользователя должен браться из настроек или регистрации
         val userId = "user_" + (1000..9999).random() 
