@@ -1,0 +1,3 @@
+# Proguard rules
+-keep class org.eclipse.paho.client.mqttv3.** { *; }
+-keep class org.eclipse.paho.android.service.** { *; }
