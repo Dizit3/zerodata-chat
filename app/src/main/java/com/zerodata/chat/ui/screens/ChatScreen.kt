@@ -38,8 +38,9 @@ fun ChatScreen(messages: List<Message>, onSendMessage: (String) -> Unit) {
                     onValueChange = { textState = it },
                     modifier = Modifier.weight(1f),
                     placeholder = { Text("Сообщение...") },
-                    colors = TextFieldDefaults.textFieldColors(
-                        containerColor = Color.Transparent
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent
                     )
                 )
                 IconButton(onClick = {
