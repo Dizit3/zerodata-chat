@@ -33,6 +33,7 @@
         <service
             android:name="info.mqtt.android.service.MqttService"
             android:foregroundServiceType="remoteMessaging"
+            tools:replace="android:foregroundServiceType"
             android:enabled="true" />
             
         <activity
