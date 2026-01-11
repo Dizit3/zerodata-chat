@@ -43,8 +43,8 @@ class MainActivity : ComponentActivity() {
 
             NavHost(navController = navController, startDestination = "hub") {
                 composable("hub") {
-                    val chats by mainViewModel.chats.collectAsState()
-                    val connectionStatus by mainViewModel.connectionStatus.collectAsState()
+                    val chats by mainViewModel.chats.collectAsState(initial = emptyList())
+                    val connectionStatus by mainViewModel.connectionStatus.collectAsState(initial = false)
                     
                     ChatListScreen(
                         userId = userId,
@@ -75,7 +75,7 @@ class MainActivity : ComponentActivity() {
                         }
                     )
                     
-                    val messages by chatViewModel.messages.collectAsState()
+                    val messages by chatViewModel.messages.collectAsState(initial = emptyList())
                     ChatScreen(
                         userId = userId,
                         messages = messages,
