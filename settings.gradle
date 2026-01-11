@@ -1,0 +1,2 @@
+rootProject.name = "ZeroDataChat"
+include ':app'
