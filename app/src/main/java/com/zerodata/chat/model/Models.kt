@@ -9,6 +9,7 @@ data class Message(
     val id: String = UUID.randomUUID().toString(),
     val chatId: String,
     val senderId: String,
+    val receiverId: String = "",
     val text: String,
     val timestamp: Long = System.currentTimeMillis(),
     val status: MessageStatus = MessageStatus.SENDING,
