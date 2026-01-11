@@ -15,13 +15,18 @@ import com.zerodata.chat.ui.components.MessageBubble
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatScreen(messages: List<Message>, onSendMessage: (String) -> Unit) {
+fun ChatScreen(userId: String, messages: List<Message>, onSendMessage: (String) -> Unit) {
     var textState by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("ZeroData Chat") },
+                title = { 
+                    Column {
+                        Text("ZeroData Chat")
+                        Text("My ID: $userId", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.7f))
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color(0xFF517DA2),
                     titleContentColor = Color.White

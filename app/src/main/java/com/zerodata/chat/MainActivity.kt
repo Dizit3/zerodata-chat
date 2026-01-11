@@ -31,6 +31,7 @@ class MainActivity : ComponentActivity() {
             val messages by viewModel.messages.collectAsState()
             
             ChatScreen(
+                userId = userId,
                 messages = messages,
                 onSendMessage = { text -> 
                     // Для теста: отправляем самому себе или на фиксированный ID
