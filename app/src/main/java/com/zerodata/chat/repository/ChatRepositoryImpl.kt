@@ -1,30 +1,42 @@
 package com.zerodata.chat.repository
 
+import com.zerodata.chat.database.ChatDao
+import com.zerodata.chat.database.ChatEntity
+import com.zerodata.chat.database.MessageDao
+import com.zerodata.chat.database.MessageEntity
 import com.zerodata.chat.model.Chat
 import com.zerodata.chat.model.Message
-import com.zerodata.chat.network.MqttManager
+import com.zerodata.chat.network.MqttMessagingManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 /**
- * Реализация репозитория, хранящая данные в оперативной памяти.
+ * Реализация репозитория с использованием Room для персистентного хранения.
  */
 class ChatRepositoryImpl(
-    private val mqttManager: MqttManager,
+    private val mqttManager: MqttMessagingManager,
     private val currentUserId: String,
+    private val chatDao: ChatDao,
+    private val messageDao: MessageDao,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 ) : ChatRepository {
 
-    private val _allChats = MutableStateFlow<List<Chat>>(emptyList())
-    override val allChats: StateFlow<List<Chat>> = _allChats.asStateFlow()
-
-    private val _messagesByChat = mutableMapOf<String, MutableStateFlow<List<Message>>>()
+    override val allChats: StateFlow<List<Chat>> = chatDao.getChatsWithLastMessageFlow()
+        .map { list ->
+            list.map { item ->
+                Chat(
+                    id = item.chat.id,
+                    name = item.chat.name,
+                    unreadCount = item.chat.unreadCount,
+                    avatarUrl = item.chat.avatarUrl,
+                    lastMessage = item.lastMessage?.toModel()
+                )
+            }
+        }
+        .stateIn(scope, SharingStarted.Lazily, emptyList())
 
     private val _connectionStatus = MutableStateFlow(false)
     override val connectionStatus: StateFlow<Boolean> = _connectionStatus.asStateFlow()
@@ -51,9 +63,9 @@ class ChatRepositoryImpl(
     }
 
     override fun getMessages(chatId: String): StateFlow<List<Message>> {
-        return _messagesByChat.getOrPut(chatId) {
-            MutableStateFlow(emptyList())
-        }.asStateFlow()
+        return messageDao.getMessagesForChatFlow(chatId)
+            .map { entities -> entities.map { it.toModel() } }
+            .stateIn(scope, SharingStarted.Lazily, emptyList())
     }
 
     override suspend fun sendMessage(chatId: String, text: String) {
@@ -64,66 +76,78 @@ class ChatRepositoryImpl(
             text = text
         )
         
-        // Сначала добавляем локально для мгновенной реакции UI (Optimistic UI)
-        addMessageToFlow(chatId, message)
-        updateChatLastMessage(chatId, message, isIncoming = false)
+        // Сохраняем локально в БД
+        saveMessageAndHandleChat(message, isIncoming = false)
         
         // Отправляем в сеть
         mqttManager.sendMessage(message)
     }
 
     override fun createChat(recipientId: String) {
-        if (_allChats.value.any { it.id == recipientId }) return
-        
-        val newChat = Chat(
-            id = recipientId,
-            name = recipientId,
-            unreadCount = 0
-        )
-        _allChats.value = _allChats.value + newChat
+        scope.launch {
+            chatDao.insertChat(
+                ChatEntity(
+                    id = recipientId,
+                    name = recipientId,
+                    unreadCount = 0
+                )
+            )
+        }
     }
 
     override fun clearUnread(chatId: String) {
-        _allChats.value = _allChats.value.map { chat ->
-            if (chat.id == chatId) chat.copy(unreadCount = 0) else chat
+        scope.launch {
+            chatDao.updateUnreadCount(chatId, 0)
         }
     }
 
-    private fun handleIncomingMessage(message: Message) {
+    private suspend fun handleIncomingMessage(message: Message) {
+        saveMessageAndHandleChat(message, isIncoming = true)
+    }
+
+    private suspend fun saveMessageAndHandleChat(message: Message, isIncoming: Boolean) {
         val chatId = message.chatId
-        addMessageToFlow(chatId, message)
-        updateChatLastMessage(chatId, message, isIncoming = true)
-    }
-
-    private fun addMessageToFlow(chatId: String, message: Message) {
-        val flow = _messagesByChat.getOrPut(chatId) {
-            MutableStateFlow(emptyList())
-        }
-        flow.value = flow.value + message
-    }
-
-    private fun updateChatLastMessage(chatId: String, message: Message, isIncoming: Boolean) {
-        val currentChats = _allChats.value
-        val existingChat = currentChats.find { it.id == chatId }
         
-        if (existingChat != null) {
-            _allChats.value = currentChats.map { chat ->
-                if (chat.id == chatId) {
-                    chat.copy(
-                        lastMessage = message,
-                        unreadCount = if (isIncoming) chat.unreadCount + 1 else chat.unreadCount
-                    )
-                } else chat
-            }
-        } else {
-            // Если чата нет, создаем его (случай первого входящего сообщения)
-            val newChat = Chat(
-                id = chatId,
-                name = message.senderId,
-                lastMessage = message,
-                unreadCount = if (isIncoming) 1 else 0
+        // Сохраняем сообщение
+        messageDao.insertMessage(message.toEntity())
+        
+        // Проверяем существование чата и обновляем его
+        val existingChats = allChats.value
+        val chat = existingChats.find { it.id == chatId }
+        
+        if (chat == null) {
+            chatDao.insertChat(
+                ChatEntity(
+                    id = chatId,
+                    name = message.senderId,
+                    unreadCount = if (isIncoming) 1 else 0
+                )
             )
-            _allChats.value = currentChats + newChat
+        } else if (isIncoming) {
+            chatDao.updateUnreadCount(chatId, chat.unreadCount + 1)
         }
     }
+
+    // Helper extensions
+    private fun Message.toEntity() = MessageEntity(
+        id = id,
+        chatId = chatId,
+        senderId = senderId,
+        receiverId = receiverId,
+        text = text,
+        timestamp = timestamp,
+        status = status,
+        type = type
+    )
+
+    private fun MessageEntity.toModel() = Message(
+        id = id,
+        chatId = chatId,
+        senderId = senderId,
+        receiverId = receiverId,
+        text = text,
+        timestamp = timestamp,
+        status = status,
+        type = type
+    )
 }

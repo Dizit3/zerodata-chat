@@ -58,7 +58,22 @@ class MainActivity : ComponentActivity() {
                             onAddChatClick = { recipientId ->
                                 mainViewModel.createChat(recipientId)
                                 navController.navigate("chat/$recipientId")
+                            },
+                            onLobbyClick = {
+                                navController.navigate("lobby")
                             }
+                        )
+                    }
+                    
+                    composable("lobby") {
+                        val lobbyViewModel: com.zerodata.chat.viewmodel.LobbyViewModel = koinViewModel()
+                        com.zerodata.chat.ui.screens.LobbyScreen(
+                            viewModel = lobbyViewModel,
+                            onUserClick = { userId ->
+                                mainViewModel.createChat(userId)
+                                navController.navigate("chat/$userId")
+                            },
+                            onBack = { navController.popBackStack() }
                         )
                     }
                     

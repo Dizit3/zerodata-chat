@@ -38,3 +38,12 @@ data class Chat(
     val unreadCount: Int = 0,
     val avatarUrl: String? = null
 )
+
+/**
+ * Модель присутствия в глобальном лобби.
+ */
+@Serializable
+data class LobbyPresence(
+    val userId: String,
+    val timestamp: Long = System.currentTimeMillis()
+)

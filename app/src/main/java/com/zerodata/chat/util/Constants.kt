@@ -8,6 +8,7 @@ object Constants {
     const val MQTT_SERVER_URI = "tcp://broker.emqx.io:1883"
     const val TOPIC_PREFIX = "zerodata/users"
     const val TOPIC_INBOX_SUFFIX = "inbox"
+    const val TOPIC_LOBBY = "zerodata/public/lobby"
     
     // QOS
     const val QOS_LEAST_ONCE = 1

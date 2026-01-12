@@ -4,31 +4,26 @@ import com.zerodata.chat.model.Message
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Интерфейс для взаимодействия с MQTT брокером.
+ * Интерфейс для управления подключением и перепиской.
  */
-interface MqttManager {
-    /**
-     * Статус подключения.
-     */
+interface MqttMessagingManager {
     val connectionStatus: Flow<Boolean>
-
-    /**
-     * Подключиться к брокеру.
-     */
     suspend fun connect()
-
-    /**
-     * Отключиться от брокера.
-     */
     suspend fun disconnect()
-
-    /**
-     * Отправить сообщение в конкретный чат.
-     */
     suspend fun sendMessage(message: Message)
-
-    /**
-     * Подписаться на новые сообщения.
-     */
     fun observeMessages(): Flow<Message>
 }
+
+/**
+ * Интерфейс для работы с глобальным лобби и поиском пользователей.
+ */
+interface MqttDiscoveryManager {
+    fun joinLobby()
+    fun leaveLobby()
+    fun observeLobby(): Flow<LobbyPresence>
+}
+
+/**
+ * Объединенный интерфейс для реализации.
+ */
+interface MqttManager : MqttMessagingManager, MqttDiscoveryManager
