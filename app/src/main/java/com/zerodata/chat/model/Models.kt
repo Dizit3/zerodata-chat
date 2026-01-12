@@ -1,10 +1,12 @@
 package com.zerodata.chat.model
 
+import kotlinx.serialization.Serializable
 import java.util.UUID
 
 /**
  * Модель сообщения в чате
  */
+@Serializable
 data class Message(
     val id: String = UUID.randomUUID().toString(),
     val chatId: String,
@@ -16,10 +18,12 @@ data class Message(
     val type: MessageType = MessageType.TEXT
 )
 
+@Serializable
 enum class MessageStatus {
     SENDING, SENT, DELIVERED, READ, ERROR
 }
 
+@Serializable
 enum class MessageType {
     TEXT, IMAGE, SYSTEM
 }
