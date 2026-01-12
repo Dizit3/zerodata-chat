@@ -29,16 +29,16 @@ class MqttPayloadMapperImpl : MqttPayloadMapper {
 
     override fun toMessageJson(message: Message): String = json.encodeToString(message)
 
-    override fun fromMessageJson(json: String): Message? = try {
-        json.decodeFromString<Message>(json)
+    override fun fromMessageJson(jsonString: String): Message? = try {
+        json.decodeFromString<Message>(jsonString)
     } catch (e: Exception) {
         null
     }
 
     override fun toLobbyJson(presence: LobbyPresence): String = json.encodeToString(presence)
 
-    override fun fromLobbyJson(json: String): LobbyPresence? = try {
-        json.decodeFromString<LobbyPresence>(json)
+    override fun fromLobbyJson(jsonString: String): LobbyPresence? = try {
+        json.decodeFromString<LobbyPresence>(jsonString)
     } catch (e: Exception) {
         null
     }
