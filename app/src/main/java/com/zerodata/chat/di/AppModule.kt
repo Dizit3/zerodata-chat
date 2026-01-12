@@ -47,10 +47,10 @@ val appModule = module {
     single { get<AppDatabase>().messageDao() }
 
     // Repository
-    single<ChatRepository> { ChatRepositoryImpl(get(), get(), get(), get()) }
+    single<ChatRepository> { ChatRepositoryImpl(get(), get<String>(), get(), get()) }
 
     // ViewModels
     viewModel { MainViewModel(get()) }
-    viewModel { (chatId: String) -> ChatViewModel(get(), chatId) }
-    viewModel { LobbyViewModel(get(), get()) }
+    viewModel { (chatId: String) -> ChatViewModel(get<ChatRepository>(), chatId) }
+    viewModel { LobbyViewModel(get<MqttDiscoveryManager>(), get<String>()) }
 }

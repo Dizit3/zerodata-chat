@@ -36,6 +36,16 @@ class MqttManagerMock : MqttManager {
 
     override fun observeMessages(): Flow<Message> = _incomingMessages.asSharedFlow()
 
+    override fun joinLobby() {
+        println("Joined lobby (mock)")
+    }
+
+    override fun leaveLobby() {
+        println("Left lobby (mock)")
+    }
+
+    override fun observeLobby(): Flow<com.zerodata.chat.model.LobbyPresence> = MutableSharedFlow<com.zerodata.chat.model.LobbyPresence>().asSharedFlow()
+
     // Метод для симуляции входящего сообщения (для тестов)
     suspend fun simulateIncoming(message: Message) {
         _incomingMessages.emit(message)

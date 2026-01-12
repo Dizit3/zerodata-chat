@@ -134,9 +134,9 @@ class RealMqttManager(
         mqttClient.subscribe(Constants.TOPIC_LOBBY, Constants.QOS_LEAST_ONCE)
         
         lobbyJob = scope.launch {
-            while (kotlinx.coroutines.isActive) {
+            while (isActive) {
                 sendPresence()
-                kotlinx.coroutines.delay(5000) // Отправляем присутствие каждые 5 сек
+                delay(5000) // Отправляем присутствие каждые 5 сек
             }
         }
     }

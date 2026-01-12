@@ -2,9 +2,9 @@ package com.zerodata.chat.network
 
 import com.zerodata.chat.model.LobbyPresence
 import com.zerodata.chat.model.Message
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
 
 /**
  * Интерфейс для преобразования различных моделей в JSON и обратно.
@@ -22,23 +22,23 @@ interface MqttPayloadMapper {
  * Реализация на базе kotlinx.serialization.
  */
 class MqttPayloadMapperImpl : MqttPayloadMapper {
-    private val json = Json {
+    private val jsonObject = Json {
         ignoreUnknownKeys = true
         coerceInputValues = true
     }
 
-    override fun toMessageJson(message: Message): String = json.encodeToString(message)
+    override fun toMessageJson(message: Message): String = jsonObject.encodeToString(message)
 
-    override fun fromMessageJson(jsonString: String): Message? = try {
-        json.decodeFromString<Message>(jsonString)
+    override fun fromMessageJson(json: String): Message? = try {
+        jsonObject.decodeFromString<Message>(json)
     } catch (e: Exception) {
         null
     }
 
-    override fun toLobbyJson(presence: LobbyPresence): String = json.encodeToString(presence)
+    override fun toLobbyJson(presence: LobbyPresence): String = jsonObject.encodeToString(presence)
 
-    override fun fromLobbyJson(jsonString: String): LobbyPresence? = try {
-        json.decodeFromString<LobbyPresence>(jsonString)
+    override fun fromLobbyJson(json: String): LobbyPresence? = try {
+        jsonObject.decodeFromString<LobbyPresence>(json)
     } catch (e: Exception) {
         null
     }
