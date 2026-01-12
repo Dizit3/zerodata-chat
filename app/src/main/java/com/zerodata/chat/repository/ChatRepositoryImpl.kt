@@ -69,15 +69,23 @@ class ChatRepositoryImpl(
     }
 
     override suspend fun sendMessage(chatId: String, text: String) {
+        // Extract recipient from the composite chatId (format: id1_id2)
+        // If chatId doesn't contain the separator (legacy/migration), assume it is the recipientId
+        val recipientId = if (chatId.contains("_")) {
+            chatId.split("_").firstOrNull { it != currentUserId } ?: chatId
+        } else {
+            chatId
+        }
+
         val message = Message(
             chatId = chatId,
             senderId = currentUserId,
-            receiverId = chatId,
+            receiverId = recipientId,
             text = text
         )
         
         // Сохраняем локально в БД
-        saveMessageAndHandleChat(message, isIncoming = false)
+        saveMessageAndHandleChat(message)
         
         // Отправляем в сеть
         mqttManager.sendMessage(message)
@@ -85,10 +93,11 @@ class ChatRepositoryImpl(
 
     override fun createChat(recipientId: String) {
         scope.launch {
+            val chatId = getCanonicalChatId(currentUserId, recipientId)
             chatDao.insertChat(
                 ChatEntity(
-                    id = recipientId,
-                    name = recipientId,
+                    id = chatId,
+                    name = recipientId, // TODO: Fetch real name if possible
                     unreadCount = 0
                 )
             )
@@ -102,31 +111,42 @@ class ChatRepositoryImpl(
     }
 
     private suspend fun handleIncomingMessage(message: Message) {
-        saveMessageAndHandleChat(message, isIncoming = true)
+        saveMessageAndHandleChat(message)
     }
 
-    private suspend fun saveMessageAndHandleChat(message: Message, isIncoming: Boolean) {
-        // Correctly derive chatId so both users see the same 'chat' identifier locally (the OTHER person's ID)
-        val chatId = if (isIncoming) message.senderId else message.receiverId
+    private suspend fun saveMessageAndHandleChat(message: Message) {
+        // Always generate the canonical ID from participants to ensure consistency
+        val chatId = getCanonicalChatId(message.senderId, message.receiverId)
         
-        // Сохраняем сообщение с правильным chatId
+        // Ensure message is linked to this canonical chat
         messageDao.insertMessage(message.copy(chatId = chatId).toEntity())
         
         // Проверяем существование чата и обновляем его
         val existingChats = allChats.value
         val chat = existingChats.find { it.id == chatId }
         
+        val otherUserId = if (message.senderId == currentUserId) message.receiverId else message.senderId
+        val isIncoming = message.senderId != currentUserId
+
         if (chat == null) {
             chatDao.insertChat(
                 ChatEntity(
                     id = chatId,
-                    name = message.senderId,
+                    name = otherUserId,
                     unreadCount = if (isIncoming) 1 else 0
                 )
             )
         } else if (isIncoming) {
             chatDao.updateUnreadCount(chatId, chat.unreadCount + 1)
         }
+    }
+
+    /**
+     * Generates a deterministic Chat ID based on two User IDs.
+     * Ensures that (A, B) and (B, A) produce the same ID.
+     */
+    private fun getCanonicalChatId(user1: String, user2: String): String {
+        return if (user1 < user2) "${user1}_${user2}" else "${user2}_${user1}"
     }
 
     // Helper extensions

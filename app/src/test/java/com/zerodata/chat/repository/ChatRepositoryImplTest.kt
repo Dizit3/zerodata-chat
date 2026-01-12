@@ -91,19 +91,30 @@ class ChatRepositoryImplTest {
     }
 
     @Test
-    fun `when incoming message has literal chatId it is mapped to senderId`() = testScope.runTest {
-        // Given a message where the sender put the chat ID as the receiver's ID (which caused the bug)
-        // e.g. Bob sends to Alice, so message.chatId = "Alice"
-        val message = Message(chatId = "me", senderId = "friend", text = "Hello", receiverId = "me")
+    fun `when createChat is called then canonical ID is used`() = testScope.runTest {
+        // When
+        repository.createChat("friend")
+        advanceUntilIdle()
+
+        // Then
+        // ID should be min(me, friend)_max(me, friend) -> "friend_me"
+        coVerify { chatDao.insertChat(match { it.id == "friend_me" }) }
+        coroutineContext.cancelChildren()
+    }
+
+    @Test
+    fun `when incoming message received then it is mapped to canonical chatId`() = testScope.runTest {
+        // Given
+        val message = Message(chatId = "some_random_id", senderId = "friend", text = "Hello", receiverId = "me")
 
         // When
         incomingMessagesFlow.emit(message)
         advanceUntilIdle()
 
         // Then
-        // The repository should ignore the "me" chatId in the message and use "friend" (senderId)
-        coVerify { chatDao.insertChat(match { it.id == "friend" }) } 
-        coVerify { messageDao.insertMessage(match { it.chatId == "friend" }) }
+        // Should match "friend_me" (alphabetical order of "friend" and "me")
+        coVerify { chatDao.insertChat(match { it.id == "friend_me" }) } 
+        coVerify { messageDao.insertMessage(match { it.chatId == "friend_me" }) }
 
         coroutineContext.cancelChildren()
     }
