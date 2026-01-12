@@ -103,7 +103,7 @@ class ChatRepositoryImplTest {
         // Then
         // The repository should ignore the "me" chatId in the message and use "friend" (senderId)
         coVerify { chatDao.insertChat(match { it.id == "friend" }) } 
-        coVerify { messageDao.insertMessage(any()) }
+        coVerify { messageDao.insertMessage(match { it.chatId == "friend" }) }
 
         coroutineContext.cancelChildren()
     }

@@ -109,8 +109,8 @@ class ChatRepositoryImpl(
         // Correctly derive chatId so both users see the same 'chat' identifier locally (the OTHER person's ID)
         val chatId = if (isIncoming) message.senderId else message.receiverId
         
-        // Сохраняем сообщение
-        messageDao.insertMessage(message.toEntity())
+        // Сохраняем сообщение с правильным chatId
+        messageDao.insertMessage(message.copy(chatId = chatId).toEntity())
         
         // Проверяем существование чата и обновляем его
         val existingChats = allChats.value
