@@ -39,7 +39,7 @@ class ChatRepositoryImplTest {
 
     @After
     fun tearDown() {
-        testScope.coroutineContext.cancelChildren()
+        Dispatchers.resetMain()
     }
 
     @Test
@@ -60,6 +60,8 @@ class ChatRepositoryImplTest {
         val messages = repository.getMessages("friend").value
         assertEquals(1, messages.size)
         assertEquals("Hello", messages[0].text)
+
+        coroutineContext.cancelChildren()
     }
 
     @Test
@@ -74,6 +76,8 @@ class ChatRepositoryImplTest {
         assertEquals("Hi", messages[0].text)
         
         coVerify { mqttManager.sendMessage(match { it.text == "Hi" && it.receiverId == "friend" }) }
+
+        coroutineContext.cancelChildren()
     }
 
     @Test
@@ -88,5 +92,7 @@ class ChatRepositoryImplTest {
 
         // Then
         assertEquals(0, repository.allChats.value[0].unreadCount)
+
+        coroutineContext.cancelChildren()
     }
 }
