@@ -18,6 +18,7 @@
         android:roundIcon="@drawable/ic_placeholder"
         android:supportsRtl="true"
         android:theme="@style/Theme.ZeroDataChat"
+        android:usesCleartextTraffic="true"
         tools:targetApi="31">
         
         <activity

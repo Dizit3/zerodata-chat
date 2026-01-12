@@ -30,6 +30,11 @@ class ChatRepositoryImpl(
     override val connectionStatus: StateFlow<Boolean> = _connectionStatus.asStateFlow()
 
     init {
+        // Инициируем подключение
+        scope.launch {
+            mqttManager.connect()
+        }
+
         // Наблюдаем за подключением
         scope.launch {
             mqttManager.connectionStatus.collect {
