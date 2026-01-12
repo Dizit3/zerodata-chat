@@ -69,9 +69,8 @@ class RealMqttManager(
                             handleLobbyMessage(payload)
                         } else {
                             payloadMapper.fromMessageJson(payload)?.let { msg ->
-                                // Убеждаемся, что chatId проставлен корректно для группировки
-                                val effectiveMsg = if (msg.chatId.isEmpty()) msg.copy(chatId = msg.senderId) else msg
-                                _incomingMessages.tryEmit(effectiveMsg)
+                                // Pass message directly, repository will handle chatId derivation
+                                _incomingMessages.tryEmit(msg)
                             }
                         }
                     }

@@ -89,4 +89,22 @@ class ChatRepositoryImplTest {
 
         coroutineContext.cancelChildren()
     }
+
+    @Test
+    fun `when incoming message has literal chatId it is mapped to senderId`() = testScope.runTest {
+        // Given a message where the sender put the chat ID as the receiver's ID (which caused the bug)
+        // e.g. Bob sends to Alice, so message.chatId = "Alice"
+        val message = Message(chatId = "me", senderId = "friend", text = "Hello", receiverId = "me")
+
+        // When
+        incomingMessagesFlow.emit(message)
+        advanceUntilIdle()
+
+        // Then
+        // The repository should ignore the "me" chatId in the message and use "friend" (senderId)
+        coVerify { chatDao.insertChat(match { it.id == "friend" }) } 
+        coVerify { messageDao.insertMessage(any()) }
+
+        coroutineContext.cancelChildren()
+    }
 }

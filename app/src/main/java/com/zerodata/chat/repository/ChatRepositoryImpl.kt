@@ -106,7 +106,8 @@ class ChatRepositoryImpl(
     }
 
     private suspend fun saveMessageAndHandleChat(message: Message, isIncoming: Boolean) {
-        val chatId = message.chatId
+        // Correctly derive chatId so both users see the same 'chat' identifier locally (the OTHER person's ID)
+        val chatId = if (isIncoming) message.senderId else message.receiverId
         
         // Сохраняем сообщение
         messageDao.insertMessage(message.toEntity())
