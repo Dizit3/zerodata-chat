@@ -14,7 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 
 /**
  * Стандартный заголовок для экранов с отображением статуса подключения и ID.
@@ -69,6 +69,6 @@ fun ZeroDataTopBar(
 @Composable
 fun BackButton(onClick: () -> Unit) {
     IconButton(onClick = onClick) {
-        Icon(Icons.Default.ArrowBack, contentDescription = "Назад", tint = Color.White)
+        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад", tint = Color.White)
     }
 }

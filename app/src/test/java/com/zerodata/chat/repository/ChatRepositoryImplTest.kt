@@ -16,9 +16,11 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
-import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import kotlinx.coroutines.flow.flowOf
+import com.zerodata.chat.database.ChatEntity
+import com.zerodata.chat.database.MessageEntity
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatRepositoryImplTest {
@@ -26,7 +28,9 @@ class ChatRepositoryImplTest {
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
     private val mqttManager: MqttManager = mockk(relaxed = true)
-    private val incomingMessagesFlow = MutableSharedFlow<Message>()
+    private val chatDao: com.zerodata.chat.database.ChatDao = mockk(relaxed = true)
+    private val messageDao: com.zerodata.chat.database.MessageDao = mockk(relaxed = true)
+    private val incomingMessagesFlow = MutableSharedFlow<Message>(extraBufferCapacity = 64)
     
     private val currentUserId = "me"
     private lateinit var repository: ChatRepositoryImpl
@@ -35,7 +39,9 @@ class ChatRepositoryImplTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         every { mqttManager.observeMessages() } returns incomingMessagesFlow
-        repository = ChatRepositoryImpl(mqttManager, currentUserId, testScope)
+        every { chatDao.getChatsWithLastMessageFlow() } returns flowOf(emptyList())
+        every { messageDao.getMessagesForChatFlow(any()) } returns flowOf(emptyList())
+        repository = ChatRepositoryImpl(mqttManager, currentUserId, chatDao, messageDao, testScope)
     }
 
     @After
@@ -44,7 +50,7 @@ class ChatRepositoryImplTest {
     }
 
     @Test
-    fun `when message is received then it is added to the correct chat`() = testScope.runTest {
+    fun `when message is received then it is handled via DAO`() = testScope.runTest {
         // Given
         val message = Message(chatId = "friend", senderId = "friend", text = "Hello")
 
@@ -53,46 +59,33 @@ class ChatRepositoryImplTest {
         advanceUntilIdle()
 
         // Then
-        val chats = repository.allChats.value
-        assertEquals(1, chats.size)
-        assertEquals("friend", chats[0].id)
-        assertEquals(1, chats[0].unreadCount)
-        
-        val messages = repository.getMessages("friend").value
-        assertEquals(1, messages.size)
-        assertEquals("Hello", messages[0].text)
+        coVerify { messageDao.insertMessage(any()) }
+        coVerify { chatDao.insertChat(any()) } // because chat doesn't exist in our empty mock
 
         coroutineContext.cancelChildren()
     }
 
     @Test
-    fun `when sendMessage is called then message is added locally and sent via MQTT`() = testScope.runTest {
+    fun `when sendMessage is called then message is inserted and sent via MQTT`() = testScope.runTest {
         // When
         repository.sendMessage("friend", "Hi")
         advanceUntilIdle()
 
         // Then
-        val messages = repository.getMessages("friend").value
-        assertEquals(1, messages.size)
-        assertEquals("Hi", messages[0].text)
-        
+        coVerify { messageDao.insertMessage(match { it.text == "Hi" }) }
         coVerify { mqttManager.sendMessage(match { it.text == "Hi" && it.receiverId == "friend" }) }
 
         coroutineContext.cancelChildren()
     }
 
     @Test
-    fun `when clearUnread is called then unread count is reset`() = testScope.runTest {
-        // Given
-        incomingMessagesFlow.emit(Message(chatId = "friend", senderId = "friend", text = "Msg"))
-        advanceUntilIdle()
-        assertEquals(1, repository.allChats.value[0].unreadCount)
-
+    fun `when clearUnread is called then DAO is notified`() = testScope.runTest {
         // When
         repository.clearUnread("friend")
+        advanceUntilIdle()
 
         // Then
-        assertEquals(0, repository.allChats.value[0].unreadCount)
+        coVerify { chatDao.updateUnreadCount("friend", 0) }
 
         coroutineContext.cancelChildren()
     }

@@ -2,7 +2,7 @@ package com.zerodata.chat.ui.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -40,7 +40,7 @@ fun MessageInput(
                 textState = ""
             }
         }) {
-            Icon(Icons.Default.Send, contentDescription = "Send", tint = Color(0xFF2196F3))
+            Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = Color(0xFF2196F3))
         }
     }
 }
