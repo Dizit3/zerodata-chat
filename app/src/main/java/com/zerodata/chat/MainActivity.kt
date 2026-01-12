@@ -22,7 +22,7 @@ import com.zerodata.chat.ui.screens.ChatListScreen
 import com.zerodata.chat.viewmodel.MainViewModel
 
 import org.koin.androidx.compose.koinViewModel
-import org.koin.compose.KoinContext
+
 import org.koin.core.parameter.parametersOf
 import org.koin.android.ext.android.inject
 
@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
         GlobalExceptionHandler.initialize(applicationContext)
         
         setContent {
-            KoinContext {
+
                 val navController = rememberNavController()
                 val mainViewModel: MainViewModel = koinViewModel()
 
@@ -78,7 +78,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 }
-            }
+
         }
     }
 }
