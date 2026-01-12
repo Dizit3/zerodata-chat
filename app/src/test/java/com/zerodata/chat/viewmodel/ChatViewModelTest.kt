@@ -19,7 +19,7 @@ class ChatViewModelTest {
 
     @Before
     fun setup() {
-        viewModel = ChatViewModel(repository, chatId)
+        // No-op init moved to tests
     }
 
     @Test
@@ -27,6 +27,7 @@ class ChatViewModelTest {
         // Given
         val mockMessages = listOf(Message(chatId = chatId, senderId = "other", text = "Hello"))
         every { repository.getMessages(chatId) } returns MutableStateFlow(mockMessages)
+        viewModel = ChatViewModel(repository, chatId)
 
         // Then
         assertEquals(mockMessages, viewModel.messages.value)
@@ -34,6 +35,9 @@ class ChatViewModelTest {
 
     @Test
     fun `when sendMessage is called then delegates to repository`() {
+        // Given
+        viewModel = ChatViewModel(repository, chatId)
+
         // When
         viewModel.sendMessage("My message")
 
