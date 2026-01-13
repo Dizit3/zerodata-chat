@@ -5,10 +5,50 @@ import com.zerodata.chat.model.Chat
 import com.zerodata.chat.repository.ChatRepository
 import kotlinx.coroutines.flow.StateFlow
 
-class MainViewModel(private val repository: ChatRepository) : ViewModel() {
+import androidx.lifecycle.viewModelScope
+import com.zerodata.chat.network.GitHubRelease
+import com.zerodata.chat.util.UpdateManager
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
+import android.content.Context
+
+class MainViewModel(private val repository: ChatRepository) : ViewModel(), KoinComponent {
     
     val chats: StateFlow<List<Chat>> = repository.allChats
     val connectionStatus: StateFlow<Boolean> = repository.connectionStatus
+
+    private val _updateAvailable = MutableStateFlow<GitHubRelease?>(null)
+    val updateAvailable = _updateAvailable.asStateFlow()
+
+    private val context: Context by inject()
+    private val updateManager = UpdateManager(context)
+
+    init {
+        checkForUpdates()
+    }
+
+    private fun checkForUpdates() {
+        viewModelScope.launch {
+            // Replace with your actual repo details
+            val release = updateManager.checkForUpdates("Dizit3", "zerodata-chat")
+            _updateAvailable.value = release
+        }
+    }
+
+    fun downloadAndInstallUpdate(release: GitHubRelease) {
+        viewModelScope.launch {
+            val apkAsset = release.assets.find { it.name.endsWith(".apk") }
+            if (apkAsset != null) {
+                val file = updateManager.downloadUpdate(apkAsset.downloadUrl)
+                if (file != null) {
+                    updateManager.installUpdate(file)
+                }
+            }
+        }
+    }
 
     fun createChat(recipientId: String) {
         repository.createChat(recipientId)

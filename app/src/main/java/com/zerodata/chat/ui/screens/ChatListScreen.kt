@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import android.widget.Toast
 import com.zerodata.chat.model.Chat
+import com.zerodata.chat.network.GitHubRelease
 import com.zerodata.chat.ui.components.ZeroDataTopBar
 import com.zerodata.chat.ui.components.ChatListItem
 import com.zerodata.chat.ui.components.AddChatDialog
@@ -26,13 +27,34 @@ fun ChatListScreen(
     chats: List<Chat>,
     connectionStatus: Boolean,
     onChatClick: (String) -> Unit,
+    onChatClick: (String) -> Unit,
     onAddChatClick: (String) -> Unit,
-    onLobbyClick: () -> Unit
+    onLobbyClick: () -> Unit,
+    updateAvailable: GitHubRelease? = null,
+    onUpdateClick: (GitHubRelease) -> Unit = {}
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
     
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
+
+    if (updateAvailable != null) {
+        AlertDialog(
+            onDismissRequest = {}, // Force update not mandatory, but let's keep it simple
+            title = { Text("Доступно обновление") },
+            text = { Text("Новая версия ${updateAvailable.tagName} доступна для скачивания.") },
+            confirmButton = {
+                TextButton(onClick = { onUpdateClick(updateAvailable) }) {
+                    Text("Скачать")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { /* Dismiss logic if needed, currently persistent state in VM */ }) {
+                    Text("Позже")
+                }
+            }
+        )
+    }
 
     if (showAddDialog) {
         AddChatDialog(
