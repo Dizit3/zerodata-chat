@@ -27,7 +27,6 @@ fun ChatListScreen(
     chats: List<Chat>,
     connectionStatus: Boolean,
     onChatClick: (String) -> Unit,
-    onChatClick: (String) -> Unit,
     onAddChatClick: (String) -> Unit,
     onLobbyClick: () -> Unit,
     updateAvailable: GitHubRelease? = null,
