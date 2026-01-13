@@ -82,15 +82,6 @@ fun ChatListScreen(
                 }
             )
         },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showAddDialog = true },
-                containerColor = Color(0xFF2196F3),
-                contentColor = Color.White
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "New Chat")
-            }
-        },
         containerColor = Color(0xFF121212)
     ) { padding ->
         LazyColumn(

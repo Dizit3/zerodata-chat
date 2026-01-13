@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.*
 import com.zerodata.chat.util.Constants
 import info.mqtt.android.service.MqttAndroidClient
 import org.eclipse.paho.client.mqttv3.*
+import timber.log.Timber
 import java.util.*
 
 class RealMqttManager(
@@ -36,13 +37,13 @@ class RealMqttManager(
         try {
             mqttClient.connect(options, null, object : IMqttActionListener {
                 override fun onSuccess(asyncActionToken: IMqttToken?) {
-                    Log.d(Constants.TAG_MQTT, "Connected successfully")
+                    Timber.d("Connected successfully")
                     _connectionStatus.value = true
                     subscribeToTopics()
                 }
 
                 override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
-                    Log.e(Constants.TAG_MQTT, "Connection failed", exception)
+                    Timber.e(exception, "Connection failed")
                     _connectionStatus.value = false
                 }
             })
@@ -50,19 +51,19 @@ class RealMqttManager(
             mqttClient.setCallback(object : MqttCallbackExtended {
                 override fun connectComplete(reconnect: Boolean, serverURI: String?) {
                     if (reconnect) {
-                        Log.d(Constants.TAG_MQTT, "Reconnected to $serverURI")
+                        Timber.d("Reconnected to $serverURI")
                         _connectionStatus.value = true
                         subscribeToTopics()
                     }
                 }
 
                 override fun connectionLost(cause: Throwable?) {
-                    Log.e(Constants.TAG_MQTT, "Connection lost", cause)
+                    Timber.e(cause, "Connection lost")
                     _connectionStatus.value = false
                 }
 
                 override fun messageArrived(topic: String?, message: MqttMessage?) {
-                    Log.d(Constants.TAG_MQTT, "Message arrived on $topic")
+                    Timber.d("Message arrived on $topic")
                     message?.let {
                         val payload = String(it.payload)
                         if (topic == Constants.TOPIC_LOBBY) {
@@ -79,7 +80,7 @@ class RealMqttManager(
                 override fun deliveryComplete(token: IMqttDeliveryToken?) {}
             })
         } catch (e: Exception) {
-            Log.e(Constants.TAG_MQTT, "Error during connect", e)
+            Timber.e(e, "Error during connect")
         }
     }
 
@@ -87,11 +88,11 @@ class RealMqttManager(
         val topic = "${Constants.TOPIC_PREFIX}/$userId/${Constants.TOPIC_INBOX_SUFFIX}"
         mqttClient.subscribe(topic, Constants.QOS_LEAST_ONCE, null, object : IMqttActionListener {
             override fun onSuccess(asyncActionToken: IMqttToken?) {
-                Log.d(Constants.TAG_MQTT, "Subscribed to $topic")
+                Timber.d("Subscribed to $topic")
             }
 
             override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
-                Log.e(Constants.TAG_MQTT, "Subscription failed", exception)
+                Timber.e(exception, "Subscription failed")
             }
         })
     }
@@ -101,7 +102,7 @@ class RealMqttManager(
             try {
                 mqttClient.disconnect()
             } catch (e: Exception) {
-                Log.e(Constants.TAG_MQTT, "Error during disconnect", e)
+                Timber.e(e, "Error during disconnect")
             }
         }
     }
@@ -115,9 +116,9 @@ class RealMqttManager(
         
         try {
             mqttClient.publish(topic, mqttMessage)
-            Log.d(Constants.TAG_MQTT, "Message published to $topic")
+            Timber.d("Message published to $topic")
         } catch (e: Exception) {
-            Log.e(Constants.TAG_MQTT, "Failed to publish message", e)
+            Timber.e(e, "Failed to publish message")
         }
     }
 
@@ -148,7 +149,7 @@ class RealMqttManager(
                 mqttClient.unsubscribe(Constants.TOPIC_LOBBY)
             }
         } catch (e: Exception) {
-            Log.e(Constants.TAG_MQTT, "Error unsubscribing from lobby", e)
+            Timber.e(e, "Error unsubscribing from lobby")
         }
     }
 
@@ -166,7 +167,7 @@ class RealMqttManager(
                 mqttClient.publish(Constants.TOPIC_LOBBY, mqttMessage)
             }
         } catch (e: Exception) {
-            Log.e(Constants.TAG_MQTT, "Failed to publish presence", e)
+            Timber.e(e, "Failed to publish presence")
         }
     }
 
@@ -177,7 +178,7 @@ class RealMqttManager(
                 _lobbyPresences.tryEmit(presence)
             }
         } catch (e: Exception) {
-            Log.e(Constants.TAG_MQTT, "Failed to decode lobby presence", e)
+            Timber.e(e, "Failed to decode lobby presence")
         }
     }
 }
