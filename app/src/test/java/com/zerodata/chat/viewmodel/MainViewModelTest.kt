@@ -1,5 +1,6 @@
 package com.zerodata.chat.viewmodel
 
+import android.content.Context
 import com.zerodata.chat.model.Chat
 import com.zerodata.chat.repository.ChatRepository
 import io.mockk.every
@@ -13,11 +14,15 @@ import org.junit.Test
 class MainViewModelTest {
 
     private lateinit var repository: ChatRepository
+    private lateinit var context: Context
     private lateinit var viewModel: MainViewModel
 
     @Before
     fun setup() {
         repository = mockk(relaxed = true)
+        context = mockk(relaxed = true)
+        every { context.packageName } returns "com.zerodata.chat"
+        every { context.externalCacheDir } returns null
     }
 
     @Test
@@ -27,7 +32,7 @@ class MainViewModelTest {
         every { repository.allChats } returns MutableStateFlow(mockChats)
 
         // When
-        viewModel = MainViewModel(repository)
+        viewModel = MainViewModel(repository, context)
 
         // Then
         assertEquals(mockChats, viewModel.chats.value)
@@ -36,7 +41,7 @@ class MainViewModelTest {
     @Test
     fun `when createChat is called then delegates to repository`() {
         // Given
-        viewModel = MainViewModel(repository)
+        viewModel = MainViewModel(repository, context)
 
         // When
         viewModel.createChat("user123")
@@ -48,7 +53,7 @@ class MainViewModelTest {
     @Test
     fun `when clearUnread is called then delegates to repository`() {
         // Given
-        viewModel = MainViewModel(repository)
+        viewModel = MainViewModel(repository, context)
 
         // When
         viewModel.clearUnread("chat1")

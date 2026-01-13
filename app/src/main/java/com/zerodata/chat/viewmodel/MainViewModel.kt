@@ -15,7 +15,10 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import android.content.Context
 
-class MainViewModel(private val repository: ChatRepository) : ViewModel(), KoinComponent {
+class MainViewModel(
+    private val repository: ChatRepository,
+    private val context: Context
+) : ViewModel() {
     
     val chats: StateFlow<List<Chat>> = repository.allChats
     val connectionStatus: StateFlow<Boolean> = repository.connectionStatus
@@ -23,7 +26,6 @@ class MainViewModel(private val repository: ChatRepository) : ViewModel(), KoinC
     private val _updateAvailable = MutableStateFlow<GitHubRelease?>(null)
     val updateAvailable = _updateAvailable.asStateFlow()
 
-    private val context: Context by inject()
     private val updateManager = UpdateManager(context)
 
     init {

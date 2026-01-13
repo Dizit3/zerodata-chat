@@ -50,7 +50,7 @@ val appModule = module {
     single<ChatRepository> { ChatRepositoryImpl(get(), get<String>(), get(), get()) }
 
     // ViewModels
-    viewModel { MainViewModel(get()) }
+    viewModel { MainViewModel(get(), androidContext()) }
     viewModel { (chatId: String) -> ChatViewModel(get<ChatRepository>(), chatId) }
     viewModel { LobbyViewModel(get<MqttDiscoveryManager>(), get<String>()) }
 }
