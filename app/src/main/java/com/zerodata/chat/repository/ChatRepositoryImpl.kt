@@ -7,6 +7,7 @@ import com.zerodata.chat.database.MessageEntity
 import com.zerodata.chat.model.Chat
 import com.zerodata.chat.model.Message
 import com.zerodata.chat.network.MqttMessagingManager
+import com.zerodata.chat.util.ChatUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -93,7 +94,7 @@ class ChatRepositoryImpl(
 
     override fun createChat(recipientId: String) {
         scope.launch {
-            val chatId = getCanonicalChatId(currentUserId, recipientId)
+            val chatId = ChatUtils.getCanonicalChatId(currentUserId, recipientId)
             chatDao.insertChat(
                 ChatEntity(
                     id = chatId,
@@ -116,7 +117,7 @@ class ChatRepositoryImpl(
 
     private suspend fun saveMessageAndHandleChat(message: Message) {
         // Always generate the canonical ID from participants to ensure consistency
-        val chatId = getCanonicalChatId(message.senderId, message.receiverId)
+        val chatId = ChatUtils.getCanonicalChatId(message.senderId, message.receiverId)
         
         // Ensure message is linked to this canonical chat
         messageDao.insertMessage(message.copy(chatId = chatId).toEntity())
@@ -139,14 +140,6 @@ class ChatRepositoryImpl(
         } else if (isIncoming) {
             chatDao.updateUnreadCount(chatId, chat.unreadCount + 1)
         }
-    }
-
-    /**
-     * Generates a deterministic Chat ID based on two User IDs.
-     * Ensures that (A, B) and (B, A) produce the same ID.
-     */
-    private fun getCanonicalChatId(user1: String, user2: String): String {
-        return if (user1 < user2) "${user1}_${user2}" else "${user2}_${user1}"
     }
 
     // Helper extensions

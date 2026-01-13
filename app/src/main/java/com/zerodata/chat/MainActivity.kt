@@ -1,5 +1,7 @@
 package com.zerodata.chat
 
+import com.zerodata.chat.util.ChatUtils
+
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -57,7 +59,8 @@ class MainActivity : ComponentActivity() {
                             },
                             onAddChatClick = { recipientId ->
                                 mainViewModel.createChat(recipientId)
-                                navController.navigate("chat/$recipientId")
+                                val chatId = ChatUtils.getCanonicalChatId(userId, recipientId)
+                                navController.navigate("chat/$chatId")
                             },
                             onLobbyClick = {
                                 navController.navigate("lobby")
@@ -69,9 +72,10 @@ class MainActivity : ComponentActivity() {
                         val lobbyViewModel: com.zerodata.chat.viewmodel.LobbyViewModel = koinViewModel()
                         com.zerodata.chat.ui.screens.LobbyScreen(
                             viewModel = lobbyViewModel,
-                            onUserClick = { userId ->
-                                mainViewModel.createChat(userId)
-                                navController.navigate("chat/$userId")
+                            onUserClick = { recipientId ->
+                                mainViewModel.createChat(recipientId)
+                                val chatId = ChatUtils.getCanonicalChatId(userId, recipientId)
+                                navController.navigate("chat/$chatId")
                             },
                             onBack = { navController.popBackStack() }
                         )
