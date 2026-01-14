@@ -60,10 +60,14 @@ class UpdateManager(private val context: Context) {
         }
     }
 
-    suspend fun downloadUpdate(downloadUrl: String): File? {
+    suspend fun downloadUpdate(downloadUrl: String, onProgress: (Int) -> Unit): File? {
         return withContext(Dispatchers.IO) {
             try {
-                val client = OkHttpClient()
+                Timber.d("Starting download from: %s", downloadUrl)
+                val client = OkHttpClient.Builder()
+                    .followRedirects(true)
+                    .followSslRedirects(true)
+                    .build()
                 val request = Request.Builder().url(downloadUrl).build()
                 val response = client.newCall(request).execute()
 
@@ -72,19 +76,33 @@ class UpdateManager(private val context: Context) {
                     return@withContext null
                 }
 
-                val file = File(context.filesDir, "update.apk")
                 val body = response.body ?: run {
                     Timber.e("Download failed: response body is null")
                     return@withContext null
                 }
+
+                val contentLength = body.contentLength()
+                val file = File(context.externalCacheDir, "update.apk")
                 
                 body.byteStream().use { input ->
                     FileOutputStream(file).use { output ->
-                        input.copyTo(output)
+                        val buffer = ByteArray(8 * 1024)
+                        var bytesRead: Int
+                        var totalBytesRead: Long = 0
+                        while (input.read(buffer).also { bytesRead = it } != -1) {
+                            output.write(buffer, 0, bytesRead)
+                            totalBytesRead += bytesRead
+                            if (contentLength > 0) {
+                                val progress = ((totalBytesRead * 100) / contentLength).toInt()
+                                withContext(Dispatchers.Main) {
+                                    onProgress(progress)
+                                }
+                            }
+                        }
                     }
                 }
-                Timber.d("Update downloaded to: %s", file.absolutePath)
-                file
+                Timber.d("Update downloaded to: %s (%d bytes)", file.absolutePath, file.length())
+                if (file.exists() && file.length() > 0) file else null
             } catch (e: Exception) {
                 Timber.e(e, "Download update failed")
                 null

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.zerodata.chat.viewmodel.MainViewModelTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-01-14T13:40:10" hostname="DESKTOP-S5RS7CD" time="1.135">
+<testsuite name="com.zerodata.chat.viewmodel.MainViewModelTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-01-14T13:48:52" hostname="DESKTOP-S5RS7CD" time="0.842">
   <properties/>
-  <testcase name="when clearUnread is called then delegates to repository" classname="com.zerodata.chat.viewmodel.MainViewModelTest" time="1.123"/>
+  <testcase name="when clearUnread is called then delegates to repository" classname="com.zerodata.chat.viewmodel.MainViewModelTest" time="0.831"/>
   <testcase name="viewModel observes allChats from repository" classname="com.zerodata.chat.viewmodel.MainViewModelTest" time="0.004"/>
-  <testcase name="when createChat is called then delegates to repository" classname="com.zerodata.chat.viewmodel.MainViewModelTest" time="0.007"/>
+  <testcase name="when createChat is called then delegates to repository" classname="com.zerodata.chat.viewmodel.MainViewModelTest" time="0.006"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

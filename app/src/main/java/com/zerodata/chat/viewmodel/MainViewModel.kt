@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import android.content.Context
+import timber.log.Timber
 
 class MainViewModel(
     private val repository: ChatRepository,
@@ -57,16 +58,24 @@ class MainViewModel(
 
     fun downloadAndInstallUpdate(release: GitHubRelease) {
         viewModelScope.launch {
-            val apkAsset = release.assets.find { it.name.endsWith(".apk") }
+            // Use ignoreCase = true for safer matching
+            val apkAsset = release.assets.find { it.name.endsWith(".apk", ignoreCase = true) }
+            
             if (apkAsset != null) {
-                _updateProgress.value = "Подготовка к загрузке..."
-                val file = updateManager.downloadUpdate(apkAsset.downloadUrl)
+                _updateProgress.value = "Загрузка: 0%"
+                val file = updateManager.downloadUpdate(apkAsset.downloadUrl) { percent ->
+                    _updateProgress.value = "Загрузка: $percent%"
+                }
+                
                 if (file != null) {
-                    _updateProgress.value = "Загрузка завершена. Запуск установки..."
+                    _updateProgress.value = "Запуск установки..."
                     updateManager.installUpdate(file)
                 } else {
-                    _updateProgress.value = "Ошибка загрузки. Попробуйте еще раз."
+                    _updateProgress.value = "Ошибка: не удалось скачать файл."
                 }
+            } else {
+                _updateProgress.value = "Ошибка: APK не найден в релизе."
+                Timber.e("No APK found among assets: %s", release.assets.map { it.name })
             }
         }
     }
