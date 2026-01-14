@@ -10,6 +10,12 @@ interface GitHubApi {
         @Path("owner") owner: String,
         @Path("repo") repo: String
     ): GitHubRelease
+
+    @GET("repos/{owner}/{repo}/releases")
+    suspend fun getReleases(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String
+    ): List<GitHubRelease>
 }
 
 data class GitHubRelease(

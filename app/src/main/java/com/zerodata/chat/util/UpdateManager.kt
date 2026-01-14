@@ -35,7 +35,10 @@ class UpdateManager(private val context: Context) {
     suspend fun checkForUpdates(owner: String, repo: String): GitHubRelease? {
         return withContext(Dispatchers.IO) {
             try {
-                val release = gitHubApi.getLatestRelease(owner, repo)
+                // Using getReleases instead of getLatestRelease because 'latest' excludes pre-releases
+                val releases = gitHubApi.getReleases(owner, repo)
+                val release = releases.firstOrNull() ?: return@withContext null
+                
                 val currentVersion = BuildConfig.VERSION_NAME
                 
                 // Compare versions (simple string comparison for now, assuming semantic versioning like v1.0.0)
