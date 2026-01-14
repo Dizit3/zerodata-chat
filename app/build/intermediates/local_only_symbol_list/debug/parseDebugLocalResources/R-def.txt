@@ -1,0 +1,6 @@
+R_DEF: Internal format may change without notice
+local
+drawable ic_placeholder
+string app_name
+style Theme.ZeroDataChat
+xml provider_paths

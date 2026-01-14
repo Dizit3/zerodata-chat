@@ -6,7 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageInstaller
 import android.net.Uri
 import android.os.Build
-import android.util.Log
+import timber.log.Timber
 import androidx.core.content.FileProvider
 import com.zerodata.chat.BuildConfig
 import com.zerodata.chat.network.GitHubApi
@@ -44,15 +44,14 @@ class UpdateManager(private val context: Context) {
                 val localVersion = currentVersion.removePrefix("v")
 
                 if (remoteVersion != localVersion) {
-                    // Primitive check: just simple inequality assumes "new" means "update".
-                    // Ideally, use a SemVer parser. For now, assuming standard Git flow: new release > old.
-                    Log.d("UpdateManager", "Update found: $remoteVersion > $localVersion")
+                    Timber.d("Update found: remote=%s, local=%s", remoteVersion, localVersion)
                     release
                 } else {
+                    Timber.d("No update needed. remote=%s, local=%s", remoteVersion, localVersion)
                     null
                 }
             } catch (e: Exception) {
-                Log.e("UpdateManager", "Check failed", e)
+                Timber.e(e, "Check for updates failed")
                 null
             }
         }
@@ -65,15 +64,26 @@ class UpdateManager(private val context: Context) {
                 val request = Request.Builder().url(downloadUrl).build()
                 val response = client.newCall(request).execute()
 
-                if (!response.isSuccessful) return@withContext null
+                if (!response.isSuccessful) {
+                    Timber.e("Download failed: HTTP %d", response.code)
+                    return@withContext null
+                }
 
                 val file = File(context.externalCacheDir, "update.apk")
-                val fos = FileOutputStream(file)
-                fos.write(response.body?.bytes() ?: return@withContext null)
-                fos.close()
+                val body = response.body ?: run {
+                    Timber.e("Download failed: response body is null")
+                    return@withContext null
+                }
+                
+                body.byteStream().use { input ->
+                    FileOutputStream(file).use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                Timber.d("Update downloaded to: %s", file.absolutePath)
                 file
             } catch (e: Exception) {
-                Log.e("UpdateManager", "Download failed", e)
+                Timber.e(e, "Download update failed")
                 null
             }
         }
@@ -91,6 +101,12 @@ class UpdateManager(private val context: Context) {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        context.startActivity(intent)
+        
+        try {
+            Timber.d("Starting installation for: %s", uri)
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to start installation intent")
+        }
     }
 }

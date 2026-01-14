@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# Pre-commit hook to run tests before committing
+echo "--- Running Local Verification ---"
+
+# Run unit tests
+./gradlew test
+
+# Capture the exit code
+status=$?
+
+if [ $status -ne 0 ]; then
+    echo "Error: Tests failed. Please fix the code before committing."
+    exit 1
+fi
+
+echo "Success: All tests passed. Proceeding with commit."
+exit 0
