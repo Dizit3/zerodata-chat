@@ -21,7 +21,9 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.zerodata.chat.ui.screens.ChatListScreen
+import com.zerodata.chat.ui.screens.UpdateScreen
 import com.zerodata.chat.viewmodel.MainViewModel
+import androidx.compose.foundation.layout.Box
 
 import org.koin.androidx.compose.koinViewModel
 
@@ -50,32 +52,44 @@ class MainActivity : ComponentActivity() {
                         val connectionStatus by mainViewModel.connectionStatus.collectAsState(initial = false)
                         val updateAvailable by mainViewModel.updateAvailable.collectAsState()
                         val updateProgress by mainViewModel.updateProgress.collectAsState()
+                        val showUpdateScreen by mainViewModel.showUpdateScreen.collectAsState()
                         
-                        ChatListScreen(
-                            userId = userId,
-                            chats = chats,
-                            connectionStatus = connectionStatus,
-                            onChatClick = { chatId -> 
-                                mainViewModel.clearUnread(chatId)
-                                navController.navigate("chat/$chatId") 
-                            },
-                            onAddChatClick = { recipientId ->
-                                mainViewModel.createChat(recipientId)
-                                val chatId = ChatUtils.getCanonicalChatId(userId, recipientId)
-                                navController.navigate("chat/$chatId")
-                            },
-                            onLobbyClick = {
-                                navController.navigate("lobby")
-                            },
-                            updateAvailable = updateAvailable,
-                            updateProgress = updateProgress,
-                            onUpdateClick = { release ->
-                                mainViewModel.downloadAndInstallUpdate(release)
-                            },
-                            onDismissUpdate = {
-                                mainViewModel.dismissUpdate()
+                        Box {
+                            ChatListScreen(
+                                userId = userId,
+                                chats = chats,
+                                connectionStatus = connectionStatus,
+                                onChatClick = { chatId -> 
+                                    mainViewModel.clearUnread(chatId)
+                                    navController.navigate("chat/$chatId") 
+                                },
+                                onAddChatClick = { recipientId ->
+                                    mainViewModel.createChat(recipientId)
+                                    val chatId = ChatUtils.getCanonicalChatId(userId, recipientId)
+                                    navController.navigate("chat/$chatId")
+                                },
+                                onLobbyClick = {
+                                    navController.navigate("lobby")
+                                },
+                                updateAvailable = updateAvailable,
+                                updateProgress = updateProgress,
+                                onUpdateClick = {
+                                    mainViewModel.startUpdateFlow()
+                                },
+                                onDismissUpdate = {
+                                    mainViewModel.dismissUpdate()
+                                }
+                            )
+
+                            if (showUpdateScreen && updateAvailable != null) {
+                                UpdateScreen(
+                                    release = updateAvailable!!,
+                                    progress = updateProgress,
+                                    onDownloadClick = { mainViewModel.downloadAndInstallUpdate(updateAvailable!!) },
+                                    onBackClick = { mainViewModel.dismissUpdate() }
+                                )
                             }
-                        )
+                        }
                     }
                     
                     composable("lobby") {

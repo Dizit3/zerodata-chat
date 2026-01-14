@@ -26,6 +26,9 @@ class MainViewModel(
     private val _updateAvailable = MutableStateFlow<GitHubRelease?>(null)
     val updateAvailable = _updateAvailable.asStateFlow()
 
+    private val _showUpdateScreen = MutableStateFlow(false)
+    val showUpdateScreen = _showUpdateScreen.asStateFlow()
+
     private val _updateProgress = MutableStateFlow<String?>(null)
     val updateProgress = _updateProgress.asStateFlow()
 
@@ -45,20 +48,24 @@ class MainViewModel(
 
     fun dismissUpdate() {
         _updateAvailable.value = null
+        _showUpdateScreen.value = false
+    }
+
+    fun startUpdateFlow() {
+        _showUpdateScreen.value = true
     }
 
     fun downloadAndInstallUpdate(release: GitHubRelease) {
-        _updateAvailable.value = null 
         viewModelScope.launch {
             val apkAsset = release.assets.find { it.name.endsWith(".apk") }
             if (apkAsset != null) {
-                _updateProgress.value = "Загрузка..."
+                _updateProgress.value = "Подготовка к загрузке..."
                 val file = updateManager.downloadUpdate(apkAsset.downloadUrl)
                 if (file != null) {
-                    _updateProgress.value = null
+                    _updateProgress.value = "Загрузка завершена. Запуск установки..."
                     updateManager.installUpdate(file)
                 } else {
-                    _updateProgress.value = "Ошибка загрузки"
+                    _updateProgress.value = "Ошибка загрузки. Попробуйте еще раз."
                 }
             }
         }

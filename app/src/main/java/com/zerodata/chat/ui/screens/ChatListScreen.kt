@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -45,26 +46,6 @@ fun ChatListScreen(
         }
     }
 
-    if (updateAvailable != null) {
-        AlertDialog(
-            onDismissRequest = {}, // Force update not mandatory, but let's keep it simple
-            title = { Text("Доступно обновление") },
-            text = { Text("Новая версия ${updateAvailable.tagName} доступна для скачивания.") },
-            confirmButton = {
-                TextButton(onClick = { 
-                    Toast.makeText(context, "Загрузка обновления...", Toast.LENGTH_LONG).show()
-                    onUpdateClick(updateAvailable) 
-                }) {
-                    Text("Скачать")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = onDismissUpdate) {
-                    Text("Позже")
-                }
-            }
-        )
-    }
 
     if (showAddDialog) {
         AddChatDialog(
@@ -78,20 +59,29 @@ fun ChatListScreen(
 
     Scaffold(
         topBar = {
-            ZeroDataTopBar(
-                title = "ZeroData",
-                subtitle = "My ID: $userId",
-                connectionStatus = connectionStatus,
-                onSubtitleClick = {
-                    clipboardManager.setText(AnnotatedString(userId))
-                    Toast.makeText(context, "ID скопирован", Toast.LENGTH_SHORT).show()
-                },
-                actions = {
-                    IconButton(onClick = onLobbyClick) {
-                        Icon(Icons.Default.Public, contentDescription = "Lobby", tint = Color.White)
+                ZeroDataTopBar(
+                    title = "ZeroData",
+                    subtitle = "My ID: $userId",
+                    connectionStatus = connectionStatus,
+                    onSubtitleClick = {
+                        clipboardManager.setText(AnnotatedString(userId))
+                        Toast.makeText(context, "ID скопирован", Toast.LENGTH_SHORT).show()
+                    },
+                    actions = {
+                        if (updateAvailable != null) {
+                            IconButton(onClick = { onUpdateClick(updateAvailable) }) {
+                                Icon(
+                                    Icons.Default.SystemUpdate,
+                                    contentDescription = "Update Available",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                        IconButton(onClick = onLobbyClick) {
+                            Icon(Icons.Default.Public, contentDescription = "Lobby", tint = Color.White)
+                        }
                     }
-                }
-            )
+                )
         },
         containerColor = Color(0xFF121212)
     ) { padding ->
