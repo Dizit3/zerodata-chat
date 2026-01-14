@@ -69,6 +69,9 @@ class MainActivity : ComponentActivity() {
                             updateAvailable = updateAvailable,
                             onUpdateClick = { release ->
                                 mainViewModel.downloadAndInstallUpdate(release)
+                            },
+                            onDismissUpdate = {
+                                mainViewModel.dismissUpdate()
                             }
                         )
                     }

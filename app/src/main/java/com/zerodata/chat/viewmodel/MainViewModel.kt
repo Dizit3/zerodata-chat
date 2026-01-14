@@ -40,7 +40,12 @@ class MainViewModel(
         }
     }
 
+    fun dismissUpdate() {
+        _updateAvailable.value = null
+    }
+
     fun downloadAndInstallUpdate(release: GitHubRelease) {
+        _updateAvailable.value = null // Hide dialog once download starts
         viewModelScope.launch {
             val apkAsset = release.assets.find { it.name.endsWith(".apk") }
             if (apkAsset != null) {

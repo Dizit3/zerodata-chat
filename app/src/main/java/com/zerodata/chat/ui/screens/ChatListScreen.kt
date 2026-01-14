@@ -30,7 +30,8 @@ fun ChatListScreen(
     onAddChatClick: (String) -> Unit,
     onLobbyClick: () -> Unit,
     updateAvailable: GitHubRelease? = null,
-    onUpdateClick: (GitHubRelease) -> Unit = {}
+    onUpdateClick: (GitHubRelease) -> Unit = {},
+    onDismissUpdate: () -> Unit = {}
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
     
@@ -43,12 +44,15 @@ fun ChatListScreen(
             title = { Text("Доступно обновление") },
             text = { Text("Новая версия ${updateAvailable.tagName} доступна для скачивания.") },
             confirmButton = {
-                TextButton(onClick = { onUpdateClick(updateAvailable) }) {
+                TextButton(onClick = { 
+                    Toast.makeText(context, "Загрузка обновления...", Toast.LENGTH_LONG).show()
+                    onUpdateClick(updateAvailable) 
+                }) {
                     Text("Скачать")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { /* Dismiss logic if needed, currently persistent state in VM */ }) {
+                TextButton(onClick = onDismissUpdate) {
                     Text("Позже")
                 }
             }
