@@ -33,6 +33,7 @@
         android:label="ZeroData Chat"
         android:roundIcon="@drawable/ic_placeholder"
         android:supportsRtl="true"
+        android:testOnly="true"
         android:theme="@style/Theme.ZeroDataChat"
         android:usesCleartextTraffic="true" >
         <activity

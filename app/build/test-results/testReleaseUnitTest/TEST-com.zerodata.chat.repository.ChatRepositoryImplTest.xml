@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.zerodata.chat.repository.ChatRepositoryImplTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-01-14T14:03:57" hostname="DESKTOP-S5RS7CD" time="2.884">
+<testsuite name="com.zerodata.chat.repository.ChatRepositoryImplTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-01-14T14:05:05" hostname="DESKTOP-S5RS7CD" time="2.593">
   <properties/>
-  <testcase name="when message is received then it is handled via DAO" classname="com.zerodata.chat.repository.ChatRepositoryImplTest" time="2.793"/>
-  <testcase name="when createChat is called then canonical ID is used" classname="com.zerodata.chat.repository.ChatRepositoryImplTest" time="0.023"/>
+  <testcase name="when message is received then it is handled via DAO" classname="com.zerodata.chat.repository.ChatRepositoryImplTest" time="2.502"/>
+  <testcase name="when createChat is called then canonical ID is used" classname="com.zerodata.chat.repository.ChatRepositoryImplTest" time="0.021"/>
   <testcase name="when clearUnread is called then DAO is notified" classname="com.zerodata.chat.repository.ChatRepositoryImplTest" time="0.021"/>
   <testcase name="when sendMessage is called then message is inserted and sent via MQTT" classname="com.zerodata.chat.repository.ChatRepositoryImplTest" time="0.023"/>
-  <testcase name="when incoming message received then it is mapped to canonical chatId" classname="com.zerodata.chat.repository.ChatRepositoryImplTest" time="0.021"/>
+  <testcase name="when incoming message received then it is mapped to canonical chatId" classname="com.zerodata.chat.repository.ChatRepositoryImplTest" time="0.026"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>
