@@ -26,6 +26,9 @@ class MainViewModel(
     private val _updateAvailable = MutableStateFlow<GitHubRelease?>(null)
     val updateAvailable = _updateAvailable.asStateFlow()
 
+    private val _updateProgress = MutableStateFlow<String?>(null)
+    val updateProgress = _updateProgress.asStateFlow()
+
     private val updateManager = UpdateManager(context)
 
     init {
@@ -45,13 +48,17 @@ class MainViewModel(
     }
 
     fun downloadAndInstallUpdate(release: GitHubRelease) {
-        _updateAvailable.value = null // Hide dialog once download starts
+        _updateAvailable.value = null 
         viewModelScope.launch {
             val apkAsset = release.assets.find { it.name.endsWith(".apk") }
             if (apkAsset != null) {
+                _updateProgress.value = "Загрузка..."
                 val file = updateManager.downloadUpdate(apkAsset.downloadUrl)
                 if (file != null) {
+                    _updateProgress.value = null
                     updateManager.installUpdate(file)
+                } else {
+                    _updateProgress.value = "Ошибка загрузки"
                 }
             }
         }

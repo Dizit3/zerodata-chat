@@ -30,6 +30,7 @@ fun ChatListScreen(
     onAddChatClick: (String) -> Unit,
     onLobbyClick: () -> Unit,
     updateAvailable: GitHubRelease? = null,
+    updateProgress: String? = null,
     onUpdateClick: (GitHubRelease) -> Unit = {},
     onDismissUpdate: () -> Unit = {}
 ) {
@@ -37,6 +38,12 @@ fun ChatListScreen(
     
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
+
+    LaunchedEffect(updateProgress) {
+        updateProgress?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     if (updateAvailable != null) {
         AlertDialog(

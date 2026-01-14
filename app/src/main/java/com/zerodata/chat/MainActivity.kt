@@ -49,6 +49,7 @@ class MainActivity : ComponentActivity() {
                         val chats by mainViewModel.chats.collectAsState(initial = emptyList())
                         val connectionStatus by mainViewModel.connectionStatus.collectAsState(initial = false)
                         val updateAvailable by mainViewModel.updateAvailable.collectAsState()
+                        val updateProgress by mainViewModel.updateProgress.collectAsState()
                         
                         ChatListScreen(
                             userId = userId,
@@ -67,6 +68,7 @@ class MainActivity : ComponentActivity() {
                                 navController.navigate("lobby")
                             },
                             updateAvailable = updateAvailable,
+                            updateProgress = updateProgress,
                             onUpdateClick = { release ->
                                 mainViewModel.downloadAndInstallUpdate(release)
                             },

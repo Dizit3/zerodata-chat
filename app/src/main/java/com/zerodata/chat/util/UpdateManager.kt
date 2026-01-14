@@ -72,7 +72,7 @@ class UpdateManager(private val context: Context) {
                     return@withContext null
                 }
 
-                val file = File(context.externalCacheDir, "update.apk")
+                val file = File(context.filesDir, "update.apk")
                 val body = response.body ?: run {
                     Timber.e("Download failed: response body is null")
                     return@withContext null
