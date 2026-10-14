@@ -20,7 +20,8 @@ cursor-harness --version   # cursor-harness v3.2.1
 
 ## Запуск сессий
 
-Инициализатор уже выполнен в репозитории (`enhancement_list.json`, `feature_list.json`, `cursor-progress.txt`). Не вызывайте `greenfield` — это существующий Android-проект.
+Инициализатор уже выполнен. Спека — блэкаут-MVP (короткий MQTT-текст, не клон Telegram): `docs/development/enhancement_spec.txt`.
+Не вызывайте `greenfield`. Первая задача в очереди — FAB чата по ID.
 
 ```bash
 cursor-harness enhance . --spec docs/development/enhancement_spec.txt
