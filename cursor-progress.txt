@@ -1,0 +1,10 @@
+Session 1 (Enhancement Initializer): Environment set up for enhancements
+- Chose nirmalarya/cursor-harness v3.2.1 (enhance / brownfield). harness/harness-skills is Harness CI/CD and does not fit this GitHub Actions Android app.
+- Analyzed existing ZeroData Chat codebase (Compose + Room + MQTT).
+- Created enhancement_list.json with 5 enhancements (completed: false).
+- Mirrored the same items in feature_list.json (passes: false) so cursor-harness core completion checks work.
+- Spec: docs/development/enhancement_spec.txt
+- Pin: requirements-harness.txt (git+...@v3.2.1)
+- Install: scripts/install-harness.sh
+- Android validation: ./gradlew test via hooks/gradle-test.sh and git-workflow.sh
+- Did not add Puppeteer MCP: this is a native Android app, not a web UI.

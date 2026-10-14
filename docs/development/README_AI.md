@@ -6,6 +6,7 @@
 - **[task.md](task.md)**: Список выполненных и текущих задач.
 - **[implementation_plan.md](implementation_plan.md)**: План рефакторинга UI и архитектуры.
 - **[walkthrough.md](walkthrough.md)**: Полный отчет о внесенных изменениях, исправленных багах и верификации.
+- **[harness.md](harness.md)**: Подключение cursor-harness v3.2.1 (enhance). Не путать с harness/harness-skills (CI/CD Harness).
 
 ## Важные архитектурные решения:
 1. **SOLID**: Проект следует принципам SRP и ISP. Интерфейс `MqttManager` разделен. Сериализация вынесена в `MqttPayloadMapper`.

@@ -1,0 +1,35 @@
+# ZeroData Chat — enhancement spec (cursor-harness enhance)
+
+Existing Android messenger (Kotlin, Jetpack Compose, Room, MQTT on broker.emqx.io).
+Current version: 0.2.0. Architecture rules: .agent/rules.md
+
+Do not rewrite the app. One enhancement at a time. Preserve MQTT topic layout in Constants.kt
+and canonical chat IDs from ChatUtils.getCanonicalChatId.
+
+## Enhancements
+
+1. Restore the "new chat by ID" path
+   AddChatDialog already exists but ChatListScreen never sets showAddDialog = true.
+   Add a Material3 FAB (Icons.Default.Add) on the hub that opens the dialog.
+   Keep lobby as an additional discovery path.
+
+2. Chat keyboard inset
+   Set MainActivity windowSoftInputMode to adjustResize so the chat composer
+   stays visible when the IME opens. Verify ChatScreen still scrolls to latest message.
+
+3. Outgoing message status
+   After a successful mqttManager.sendMessage, persist MessageStatus.SENT.
+   On send failure, persist ERROR. Do not invent DELIVERED/READ receipts yet.
+
+4. MQTT lifecycle
+   Disconnect the MQTT client when the process is backgrounded/destroyed
+   (Application or ProcessLifecycleOwner). Reconnect on return to foreground.
+   ChatRepository remains the only chat-path owner; do not call MqttManager from UI.
+
+5. Update version compare
+   Compare GitHub release tags with real semver (major.minor.patch), not string inequality.
+   Ignore leading "v". A lower or equal tag is not an update.
+
+6. Keep unit tests green
+   After each enhancement run ./gradlew test. Add tests for ChatUtils and status mapping
+   when those files change.

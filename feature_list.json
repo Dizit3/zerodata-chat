@@ -1,0 +1,60 @@
+[
+  {
+    "category": "functional",
+    "description": "Restore AddChatDialog from a FAB on ChatListScreen so users can start a chat by recipient ID without the lobby",
+    "steps": [
+      "Open the hub (ChatListScreen)",
+      "Confirm a FAB with the Add icon is visible",
+      "Tap FAB and verify AddChatDialog appears",
+      "Enter a recipient ID and confirm; navigate to chat/{canonicalId}",
+      "Dismiss dialog without submitting; hub remains usable",
+      "Run ./gradlew test"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Keep the chat composer visible when the keyboard opens via windowSoftInputMode=adjustResize",
+    "steps": [
+      "Open an existing chat",
+      "Focus the message input so the IME appears",
+      "Verify the TopAppBar does not disappear and MessageInput stays above the keyboard",
+      "Send a message and confirm it still appears in the list"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Persist MessageStatus.SENT after a successful MQTT publish and ERROR on failure",
+    "steps": [
+      "Send a text message with MQTT connected",
+      "Confirm the stored status becomes SENT (not stuck on SENDING)",
+      "Simulate a send failure and confirm ERROR",
+      "Cover the mapping in ChatRepositoryImplTest",
+      "Run ./gradlew test"
+    ],
+    "passes": false
+  },
+  {
+    "category": "reliability",
+    "description": "Disconnect MQTT when the app leaves the foreground and reconnect on return, without ViewModels talking to MqttManager",
+    "steps": [
+      "Launch the app and confirm MQTT connects (hub connection dot)",
+      "Background the process and confirm disconnect is invoked",
+      "Foreground the app and confirm reconnect",
+      "Incoming messages still persist through ChatRepository"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Compare GitHub release tags with semver so equal or lower tags are not treated as updates",
+    "steps": [
+      "Given VERSION_NAME 0.2.0, a tag v0.2.0 must not show UpdateScreen",
+      "A tag v0.2.1 or v0.3.0 must show as available",
+      "A tag v0.1.9 must not show as available",
+      "Add unit tests for the comparator"
+    ],
+    "passes": false
+  }
+]

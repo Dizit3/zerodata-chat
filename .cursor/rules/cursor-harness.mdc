@@ -1,0 +1,15 @@
+---
+description: cursor-harness v3.2.1 enhance workflow for this repo
+alwaysApply: true
+---
+
+This project is wired to **nirmalarya/cursor-harness v3.2.1** in enhancement (brownfield) mode.
+
+- Pin: `requirements-harness.txt` (`git+https://github.com/nirmalarya/cursor-harness.git@v3.2.1`)
+- Spec: `docs/development/enhancement_spec.txt`
+- Work queue: `enhancement_list.json` (`completed`). Also keep `feature_list.json` (`passes`) in sync — the harness core loop reads `feature_list.json`.
+- Session notes: `cursor-progress.txt`
+- Dev command: `./init.sh` (runs `./gradlew test`)
+- Do **not** use `harness/harness-skills` here. That repo is Harness Inc CI/CD; this app builds with GitHub Actions.
+
+When implementing: pick the first item with `completed: false` / `passes: false`, implement only that item, run `./gradlew test`, commit, then mark it complete in **both** JSON files and append a line to `cursor-progress.txt`.

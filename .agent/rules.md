@@ -36,3 +36,8 @@
 - Используется только **Vanilla CSS/Compose Material3**. 
 - Основная цветовая схема — темная (`0xFF121212`).
 - Кнопка "Новый чат" в `AddChatDialog` является обязательной системной функцией.
+
+## 7. cursor-harness
+Автономные сессии идут через **nirmalarya/cursor-harness v3.2.1** (`enhance`), не через harness/harness-skills.
+Очередь: `enhancement_list.json` + зеркало `feature_list.json`. Спека: `docs/development/enhancement_spec.txt`.
+За один проход — один пункт. После работы: `./gradlew test`, затем `completed`/`passes` = true в обоих JSON.
