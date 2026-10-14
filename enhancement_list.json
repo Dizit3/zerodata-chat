@@ -1,0 +1,90 @@
+[
+  {
+    "category": "functional",
+    "description": "Hub FAB opens AddChatDialog so a chat can start by recipient ID without the lobby",
+    "steps": [
+      "Open ChatListScreen",
+      "FAB with Add icon is visible on the dark hub",
+      "Tap FAB: AddChatDialog appears",
+      "Enter a recipient id, confirm, navigate to chat/{canonicalId}",
+      "Dismiss without submit: stay on hub, no new chat required",
+      "Lobby icon still opens lobby",
+      "./gradlew test"
+    ],
+    "completed": false
+  },
+  {
+    "category": "reliability",
+    "description": "Lobby presence only while Lobby is open; heartbeat 30s; peer TTL 90s; QoS 0; intervals in Constants",
+    "steps": [
+      "Hub and ChatScreen do not publish zerodata/public/lobby",
+      "Open Lobby: presence starts; leave Lobby: presence and subscribe stop",
+      "Heartbeat interval is 30s (not 5s); stale peers drop after 90s",
+      "Constants.kt holds the interval/TTL values",
+      "./gradlew test"
+    ],
+    "completed": false
+  },
+  {
+    "category": "functional",
+    "description": "Publish compact MQTT chat JSON with short keys; still decode the old Message JSON",
+    "steps": [
+      "Outgoing publish is smaller than full Message model JSON (no unused enum noise required on the wire)",
+      "Incoming old-format Message JSON still inserts a Room message",
+      "Incoming compact JSON inserts a Room message",
+      "Domain/Room models unchanged for UI",
+      "Mapper unit tests for both formats",
+      "./gradlew test"
+    ],
+    "completed": false
+  },
+  {
+    "category": "reliability",
+    "description": "Persist SENT after publish, ERROR on failure, retry SENDING/ERROR on MQTT reconnect",
+    "steps": [
+      "Successful send ends as SENT in Room",
+      "Failed publish ends as ERROR",
+      "On reconnect, pending outgoing messages are published again",
+      "No DELIVERED or READ status usage",
+      "ChatRepositoryImplTest covers success, failure, retry",
+      "./gradlew test"
+    ],
+    "completed": false
+  },
+  {
+    "category": "reliability",
+    "description": "Cellular MQTT options: keepAlive 60s, timeout 30s, stable clientId from userId, cleanSession false, auto-reconnect",
+    "steps": [
+      "MqttConnectOptions set keepAliveInterval=60, connectionTimeout=30, automaticReconnect=true, cleanSession=false",
+      "clientId is stable for a userId (no random suffix per process)",
+      "App does not disconnect MQTT solely because it went to background in this item",
+      "./gradlew test"
+    ],
+    "completed": false
+  },
+  {
+    "category": "reliability",
+    "description": "Foreground service remoteMessaging holds MQTT in background plus a one-time battery-optimization exemption request",
+    "steps": [
+      "MQTT stays up when the activity is backgrounded (FGS with remoteMessaging)",
+      "Low-priority ongoing notification that the messenger is connected",
+      "Manifest service + existing FGS/POST_NOTIFICATIONS permissions wired",
+      "First launch can prompt ignore-battery-optimizations; no loop of dialogs",
+      "UI/ViewModels still do not call MqttManager for chat",
+      "./gradlew test"
+    ],
+    "completed": false
+  },
+  {
+    "category": "functional",
+    "description": "Single MQTT_SERVER_URI config (default public EMQX) with comment for a self-hosted ssl:// broker",
+    "steps": [
+      "All MQTT connects read one constant or BuildConfig field, default tcp://broker.emqx.io:1883",
+      "Comment documents pointing to a private Mosquitto/EMQX (ssl://host:8883)",
+      "No settings screen in this item",
+      "App still builds and unit tests pass with the default URI",
+      "./gradlew test"
+    ],
+    "completed": false
+  }
+]

@@ -1,0 +1,7 @@
+Session 1 (Enhancement Initializer): Environment set up for enhancements
+- Chose nirmalarya/cursor-harness v3.2.1 (enhance / brownfield).
+- Spec rewritten for blackout MVP (minimal MQTT text, not Telegram clone).
+- Queue: 7 items in enhancement_list.json / feature_list.json, all incomplete.
+- First coding session should take item 1 (hub FAB / chat by ID).
+- Do not implement out-of-scope items (media, E2E crypto, Oracle broker install, APK semver, adjustResize).
+- Validation: ./gradlew test. No Puppeteer.

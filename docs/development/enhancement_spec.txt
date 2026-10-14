@@ -1,0 +1,96 @@
+# ZeroData Chat — spec for cursor-harness enhance
+
+Product: MVP text messenger for Ukraine blackouts / overloaded mobile networks.
+Goal: send short messages with minimal radio time and payload, survive flaky 2G/3G/LTE,
+keep working from a power bank. Not a Telegram clone. No media. No accounts.
+
+App today: Android (Kotlin, Compose, Room), version 0.2.0, MQTT to public
+tcp://broker.emqx.io:1883. Architecture: .agent/rules.md
+
+Protocol stays MQTT (QoS 1 for chat). Do not switch to HTTP, WebSockets, or CoAP.
+Do not rewrite the app. One enhancement per session.
+
+## Mission constraints (never violate)
+
+- Chat I/O only through ChatRepository. No MqttManager / AppDatabase from UI or ViewModels
+  (lobby may keep using MqttDiscoveryManager until a later session moves it).
+- Personal chats: ChatUtils.getCanonicalChatId only. Never random 1:1 ids.
+- MQTT topic layout stays in Constants.kt (zerodata/users/{id}/inbox, zerodata/public/lobby).
+- Keep GlobalExceptionHandler and CrashActivity.
+- Dark Material3 (0xFF121212). Add-by-ID is the primary way to start a chat.
+- After EVERY enhancement: ./gradlew test must pass. Add/adjust unit tests when logic changes.
+
+## Out of scope (do not implement in this queue)
+
+- Images, voice, files, read receipts, typing indicators
+- E2E encryption, new binary protocol
+- Installing a broker on Oracle Cloud (document a single URI constant only)
+- Android "priority over Telegram" (OS does not allow this). Only keep-alive / FGS / battery exemption.
+- Semver for in-app APK updates, keyboard adjustResize (nice-to-have, not this MVP)
+
+## Enhancements (implement in this order)
+
+### 1. Start chat by recipient ID (FAB)
+Problem: AddChatDialog exists but ChatListScreen never sets showAddDialog = true.
+Lobby must not be required to message someone.
+
+Do: Material3 FAB (Icons.Default.Add) on the hub opens AddChatDialog. Confirm creates
+canonical chat and navigates. Dismiss does nothing. Lobby icon stays as secondary.
+
+### 2. Cut lobby radio use
+Problem: while Lobby is open, presence publishes every 5s (JSON) and peers expire at 15s.
+
+Do: heartbeat only while LobbyScreen/LobbyViewModel is active (already join/leave — keep that).
+Interval 30s, peer TTL 90s. Presence stays QoS 0. Do not publish lobby from the hub or chat.
+Put intervals in Constants.kt.
+
+### 3. Compact chat payload on the wire
+Problem: toMessageJson dumps the full Message model (long keys, unused status/type).
+
+Do: publish a compact JSON object with short keys, at least:
+id, chat participants or from/to, text, timestamp.
+Keep kotlinx.serialization. Decoder MUST still accept the old Message JSON
+(ignoreUnknownKeys / fallback) so two app versions can talk.
+Do not change Room entities or on-screen models.
+
+### 4. Outgoing queue, SENT / ERROR, retry on reconnect
+Problem: sendMessage saves locally then publishes; status stays SENDING; failures are logged only;
+offline sends are lost on the wire.
+
+Do: persist SENDING, SENT after successful publish, ERROR on failure.
+When MQTT reconnects, retry ERROR/SENDING outgoing messages for the current user.
+No DELIVERED/READ. Cover ChatRepositoryImplTest (success, fail, retry).
+
+### 5. MQTT keep-alive for cellular
+Problem: connect() only sets automaticReconnect + cleanSession=false. No keepAliveInterval.
+Random clientId suffix on every process start fights persistent sessions.
+
+Do: keepAliveInterval 60 seconds, connectionTimeout 30, automaticReconnect true,
+cleanSession false. Stable MQTT clientId derived from userId (no random suffix).
+Do not disconnect when the app backgrounds (that is the next item, FGS).
+
+### 6. Keep MQTT alive in background (foreground service)
+Problem: process death / Doze drops inbox. Old idea "disconnect on background" is wrong
+for blackouts — incoming must still arrive.
+
+Do: a small FGS with type remoteMessaging that owns/holds the MQTT connection.
+POST_NOTIFICATIONS + FOREGROUND_SERVICE_REMOTE_MESSAGING already in the manifest; add
+the service and a low-priority ongoing notification ("ZeroData connected").
+Start from ChatApp / repository init; stop only when the user leaves the app for good
+or an explicit future setting (not in this item).
+On first run, request ignore-battery-optimizations (system dialog). Do not spam.
+ViewModels still must not talk to MqttManager.
+
+### 7. Broker URI in one config place
+Problem: broker is hardcoded tcp://broker.emqx.io:1883.
+
+Do: single Constants (or BuildConfig) MQTT_SERVER_URI. Default remains public EMQX
+so the app still runs without a private server. Comment how to point at a self-hosted
+Mosquitto/EMQX (ssl://host:8883). No settings UI in this item. No TLS implementation
+unless the URI is already ssl:// and the client supports it with default trust.
+
+## Validation (every session)
+
+- ./gradlew test
+- Do not add Puppeteer/web E2E; this is native Android
+- Manual notes in cursor-progress.txt: what radio traffic changed (interval, payload)
