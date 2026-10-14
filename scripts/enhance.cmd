@@ -12,5 +12,8 @@ if not exist "docs\development\enhancement_spec.txt" (
   exit /b 1
 )
 
+python scripts\repair-harness-prompts.py
+if errorlevel 1 exit /b 1
+
 python -m cursor_harness.cli enhance . --spec docs\development\enhancement_spec.txt %*
 exit /b %ERRORLEVEL%

@@ -37,6 +37,8 @@ python -m cursor_harness.cli enhance . --spec docs\development\enhancement_spec.
 
 Или после `git pull`: `scripts\enhance.cmd`.
 
+**Windows, промпты не в пакете:** wheel 3.2.1 без `prompts/*.md` → `FileNotFoundError: enhancement_coding.md`. Сначала `git pull`, затем `python scripts\repair-harness-prompts.py` (это уже внутри `scripts\enhance.cmd`). Без pull можно вручную скопировать `.md` из https://github.com/nirmalarya/cursor-harness/tree/v3.2.1/cursor_harness/prompts в `%LOCALAPPDATA%\Programs\Python\Python311\Lib\site-packages\cursor_harness\prompts\`.
+
 Нужны Cursor login / `cursor-agent`. CLI сам ставит `cursor-agent` (фича 3.2.1). Puppeteer MCP **не** добавлялся: UI нативный, не браузерный. Проверка — `./gradlew test` и при наличии устройства `./gradlew connectedAndroidTest`.
 
 ## Артефакты
