@@ -1,9 +1,7 @@
 package com.zerodata.chat.network
 
 import android.content.Context
-import android.util.Log
 import com.zerodata.chat.model.Message
-import com.zerodata.chat.model.MessageStatus
 import com.zerodata.chat.model.LobbyPresence
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -11,7 +9,6 @@ import com.zerodata.chat.util.Constants
 import info.mqtt.android.service.MqttAndroidClient
 import org.eclipse.paho.client.mqttv3.*
 import timber.log.Timber
-import java.util.*
 
 class RealMqttManager(
     private val context: Context,
@@ -20,7 +17,7 @@ class RealMqttManager(
 ) : MqttManager {
     
     private val serverUri = Constants.MQTT_SERVER_URI
-    private val clientId = "zerodata_${userId}_${UUID.randomUUID().toString().take(5)}"
+    private val clientId = Constants.mqttClientId(userId)
     private val mqttClient = MqttAndroidClient(context, serverUri, clientId)
 
     private val _connectionStatus = MutableStateFlow(false)
@@ -29,9 +26,18 @@ class RealMqttManager(
     private val _incomingMessages = MutableSharedFlow<Message>(extraBufferCapacity = 64)
 
     override suspend fun connect() {
+        if (mqttClient.isConnected) {
+            _connectionStatus.value = true
+            return
+        }
         val options = MqttConnectOptions().apply {
             isAutomaticReconnect = true
             isCleanSession = false
+            keepAliveInterval = Constants.MQTT_KEEP_ALIVE_SECONDS
+            connectionTimeout = Constants.MQTT_CONNECTION_TIMEOUT_SECONDS
+            if (serverUri.startsWith("ssl://", ignoreCase = true)) {
+                socketFactory = javax.net.ssl.SSLSocketFactory.getDefault()
+            }
         }
 
         try {
@@ -108,17 +114,20 @@ class RealMqttManager(
     }
 
     override suspend fun sendMessage(message: Message) {
+        if (!mqttClient.isConnected) {
+            throw IllegalStateException("MQTT not connected")
+        }
         val topic = "${Constants.TOPIC_PREFIX}/${message.receiverId}/${Constants.TOPIC_INBOX_SUFFIX}"
         val payload = payloadMapper.toMessageJson(message)
         val mqttMessage = MqttMessage(payload.toByteArray()).apply {
             qos = Constants.QOS_LEAST_ONCE
         }
-        
         try {
             mqttClient.publish(topic, mqttMessage)
             Timber.d("Message published to $topic")
         } catch (e: Exception) {
             Timber.e(e, "Failed to publish message")
+            throw e
         }
     }
 
@@ -131,12 +140,12 @@ class RealMqttManager(
     override fun joinLobby() {
         if (lobbyJob != null) return
         
-        mqttClient.subscribe(Constants.TOPIC_LOBBY, Constants.QOS_LEAST_ONCE)
-        
+        mqttClient.subscribe(Constants.TOPIC_LOBBY, Constants.QOS_AT_MOST_ONCE)
+
         lobbyJob = scope.launch {
             while (isActive) {
                 sendPresence()
-                delay(5000) // Отправляем присутствие каждые 5 сек
+                delay(Constants.LOBBY_HEARTBEAT_MS)
             }
         }
     }
@@ -159,7 +168,7 @@ class RealMqttManager(
         val presence = com.zerodata.chat.model.LobbyPresence(userId)
         val payload = payloadMapper.toLobbyJson(presence)
         val mqttMessage = MqttMessage(payload.toByteArray()).apply {
-            qos = 0 // Для присутствия достаточно QOS 0
+            qos = Constants.QOS_AT_MOST_ONCE
         }
         
         try {

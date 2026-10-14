@@ -13,6 +13,7 @@ import com.zerodata.chat.ui.screens.ChatScreen
 import com.zerodata.chat.viewmodel.ChatViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.zerodata.chat.util.FirstRunOsPrompts
 import com.zerodata.chat.util.GlobalExceptionHandler
 
 import androidx.navigation.compose.NavHost
@@ -40,6 +41,7 @@ class MainActivity : ComponentActivity() {
         
         // Включаем "улавливатель" всех вылетов
         GlobalExceptionHandler.initialize(applicationContext)
+        FirstRunOsPrompts.requestIfNeeded(this)
         
         setContent {
 

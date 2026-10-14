@@ -21,6 +21,25 @@ android {
         vectorDrawables {
             useSupportLibrary true
         }
+
+        // Broker URI: GitHub Actions env MQTT_SERVER_URI, else gitignored local.properties, else public EMQX.
+        // local.properties: mqtt.server.uri=tcp://YOUR_ORACLE_IP:1883
+        def mqttUri = System.getenv("MQTT_SERVER_URI")
+        if (mqttUri == null || mqttUri.trim().isEmpty()) {
+            mqttUri = "tcp://broker.emqx.io:1883"
+            def localFile = rootProject.file("local.properties")
+            if (localFile.exists()) {
+                def props = new Properties()
+                localFile.withInputStream { props.load(it) }
+                def overrideUri = props.getProperty("mqtt.server.uri")
+                if (overrideUri != null && !overrideUri.trim().isEmpty()) {
+                    mqttUri = overrideUri.trim()
+                }
+            }
+        } else {
+            mqttUri = mqttUri.trim()
+        }
+        buildConfigField "String", "MQTT_SERVER_URI", "\"${mqttUri}\""
     }
 
     buildTypes {

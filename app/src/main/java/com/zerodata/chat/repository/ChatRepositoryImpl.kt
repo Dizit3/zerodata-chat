@@ -6,6 +6,7 @@ import com.zerodata.chat.database.MessageDao
 import com.zerodata.chat.database.MessageEntity
 import com.zerodata.chat.model.Chat
 import com.zerodata.chat.model.Message
+import com.zerodata.chat.model.MessageStatus
 import com.zerodata.chat.network.MqttMessagingManager
 import com.zerodata.chat.util.ChatUtils
 import kotlinx.coroutines.CoroutineScope
@@ -48,10 +49,13 @@ class ChatRepositoryImpl(
             mqttManager.connect()
         }
 
-        // Наблюдаем за подключением
+        // Наблюдаем за подключением и досылаем очередь при (ре)коннекте
         scope.launch {
-            mqttManager.connectionStatus.collect {
-                _connectionStatus.value = it
+            mqttManager.connectionStatus.collect { connected ->
+                _connectionStatus.value = connected
+                if (connected) {
+                    retryOutgoing()
+                }
             }
         }
 
@@ -82,14 +86,12 @@ class ChatRepositoryImpl(
             chatId = chatId,
             senderId = currentUserId,
             receiverId = recipientId,
-            text = text
+            text = text,
+            status = MessageStatus.SENDING
         )
-        
-        // Сохраняем локально в БД
+
         saveMessageAndHandleChat(message)
-        
-        // Отправляем в сеть
-        mqttManager.sendMessage(message)
+        publishOutgoing(message)
     }
 
     override fun createChat(recipientId: String) {
@@ -113,6 +115,29 @@ class ChatRepositoryImpl(
 
     private suspend fun handleIncomingMessage(message: Message) {
         saveMessageAndHandleChat(message)
+    }
+
+    private suspend fun publishOutgoing(message: Message) {
+        try {
+            mqttManager.sendMessage(message)
+            messageDao.updateStatus(message.id, MessageStatus.SENT)
+        } catch (_: Exception) {
+            messageDao.updateStatus(message.id, MessageStatus.ERROR)
+        }
+    }
+
+    private suspend fun retryOutgoing() {
+        val pending = messageDao.getOutgoingPending(
+            currentUserId,
+            listOf(MessageStatus.SENDING, MessageStatus.ERROR)
+        )
+        for (entity in pending) {
+            val message = entity.toModel()
+            if (message.status == MessageStatus.ERROR) {
+                messageDao.updateStatus(message.id, MessageStatus.SENDING)
+            }
+            publishOutgoing(message)
+        }
     }
 
     private suspend fun saveMessageAndHandleChat(message: Message) {

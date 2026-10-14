@@ -9,6 +9,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_REMOTE_MESSAGING" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <application
         android:name=".ChatApp"
@@ -45,6 +46,11 @@
             android:foregroundServiceType="remoteMessaging"
             tools:replace="android:foregroundServiceType"
             android:enabled="true" />
+
+        <service
+            android:name=".service.MqttKeepAliveService"
+            android:exported="false"
+            android:foregroundServiceType="remoteMessaging" />
             
         <activity
             android:name=".CrashActivity"

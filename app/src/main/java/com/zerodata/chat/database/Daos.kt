@@ -1,6 +1,7 @@
 package com.zerodata.chat.database
 
 import androidx.room.*
+import com.zerodata.chat.model.MessageStatus
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -26,6 +27,15 @@ interface MessageDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMessage(message: MessageEntity)
+
+    @Query("UPDATE messages SET status = :status WHERE id = :id")
+    suspend fun updateStatus(id: String, status: MessageStatus)
+
+    @Query("SELECT * FROM messages WHERE senderId = :userId AND status IN (:statuses) ORDER BY timestamp ASC")
+    suspend fun getOutgoingPending(
+        userId: String,
+        statuses: List<MessageStatus>
+    ): List<MessageEntity>
 
     @Query("SELECT * FROM messages WHERE chatId = :chatId ORDER BY timestamp DESC LIMIT 1")
     suspend fun getLastMessageForChat(chatId: String): MessageEntity?
