@@ -126,7 +126,7 @@ fun UpdateScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = release.body.ifBlank { "Описание изменений отсутствует." },
+                        text = release.body?.ifBlank { null } ?: "Описание изменений отсутствует.",
                         style = MaterialTheme.typography.bodyMedium.copy(
                             color = Color.White.copy(alpha = 0.9f),
                             lineHeight = 22.sp

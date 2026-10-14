@@ -20,8 +20,10 @@ interface GitHubApi {
 
 data class GitHubRelease(
     @SerializedName("tag_name") val tagName: String,
-    @SerializedName("assets") val assets: List<GitHubAsset>,
-    @SerializedName("body") val body: String
+    @SerializedName("assets") val assets: List<GitHubAsset> = emptyList(),
+    @SerializedName("body") val body: String? = null,
+    @SerializedName("prerelease") val prerelease: Boolean = false,
+    @SerializedName("draft") val draft: Boolean = false
 )
 
 data class GitHubAsset(

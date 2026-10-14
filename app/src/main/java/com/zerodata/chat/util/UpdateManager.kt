@@ -37,22 +37,18 @@ class UpdateManager(private val context: Context) {
             try {
                 // Using getReleases instead of getLatestRelease because 'latest' excludes pre-releases
                 val releases = gitHubApi.getReleases(owner, repo)
-                val release = releases.firstOrNull() ?: return@withContext null
-                
-                val currentVersion = BuildConfig.VERSION_NAME
-                
-                // Compare versions (simple string comparison for now, assuming semantic versioning like v1.0.0)
-                // Normalize tags: remove 'v' prefix if present
-                val remoteVersion = release.tagName.removePrefix("v")
-                val localVersion = currentVersion.removePrefix("v")
-
-                if (remoteVersion != localVersion) {
-                    Timber.d("Update found: remote=%s, local=%s", remoteVersion, localVersion)
-                    release
-                } else {
-                    Timber.d("No update needed. remote=%s, local=%s", remoteVersion, localVersion)
-                    null
+                val current = AppVersion.parse(BuildConfig.VERSION_NAME)
+                val release = releases.firstOrNull { candidate ->
+                    !candidate.draft &&
+                        candidate.assets.any { it.name.endsWith(".apk", ignoreCase = true) } &&
+                        AppVersion.parse(candidate.tagName) > current
                 }
+                if (release != null) {
+                    Timber.d("Update found: remote=%s, local=%s", release.tagName, BuildConfig.VERSION_NAME)
+                } else {
+                    Timber.d("No update needed. local=%s", BuildConfig.VERSION_NAME)
+                }
+                release
             } catch (e: Exception) {
                 Timber.e(e, "Check for updates failed")
                 null

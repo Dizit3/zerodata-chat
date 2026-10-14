@@ -14,8 +14,8 @@ android {
         applicationId "com.zerodata.chat"
         minSdk 24
         targetSdk 35
-        versionCode 2
-        versionName "0.2.0"
+        versionCode 3
+        versionName "0.3.0-pre.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -42,10 +42,27 @@ android {
         buildConfigField "String", "MQTT_SERVER_URI", "\"${mqttUri}\""
     }
 
+    def uploadStoreFile = System.getenv("SIGNING_STORE_FILE")
+    def uploadStore = (uploadStoreFile != null && file(uploadStoreFile).exists()) ? file(uploadStoreFile) : null
+
+    signingConfigs {
+        upload {
+            if (uploadStore != null) {
+                storeFile uploadStore
+                storePassword System.getenv("SIGNING_STORE_PASSWORD")
+                keyAlias System.getenv("SIGNING_KEY_ALIAS")
+                keyPassword System.getenv("SIGNING_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (uploadStore != null) {
+                signingConfig signingConfigs.upload
+            }
         }
     }
     

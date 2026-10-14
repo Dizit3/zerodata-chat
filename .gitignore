@@ -3,3 +3,7 @@ local.properties
 .idea/
 .gradle/
 **/build/
+keystore/*.jks
+keystore/*.keystore
+_ks_*.txt
+
