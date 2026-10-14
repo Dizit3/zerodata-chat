@@ -1,5 +1,7 @@
 package com.zerodata.chat.repository
 
+import com.zerodata.chat.database.ChatEntity
+import com.zerodata.chat.database.ChatWithLastMessage
 import com.zerodata.chat.database.MessageEntity
 import com.zerodata.chat.model.Message
 import com.zerodata.chat.model.MessageStatus
@@ -15,6 +17,7 @@ import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -35,16 +38,18 @@ class ChatRepositoryImplTest {
     private val messageDao: com.zerodata.chat.database.MessageDao = mockk(relaxed = true)
     private val incomingMessagesFlow = MutableSharedFlow<Message>(extraBufferCapacity = 64)
     private val connectionStatus = MutableStateFlow(false)
-    
+    private val chatsWithLastMessage = MutableStateFlow<List<ChatWithLastMessage>>(emptyList())
+
     private val currentUserId = "me"
     private lateinit var repository: ChatRepositoryImpl
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
+        chatsWithLastMessage.value = emptyList()
         every { mqttManager.observeMessages() } returns incomingMessagesFlow
         every { mqttManager.connectionStatus } returns connectionStatus
-        every { chatDao.getChatsWithLastMessageFlow() } returns flowOf(emptyList())
+        every { chatDao.getChatsWithLastMessageFlow() } returns chatsWithLastMessage
         every { messageDao.getMessagesForChatFlow(any()) } returns flowOf(emptyList())
         coEvery { messageDao.getOutgoingPending(any(), any()) } returns emptyList()
         repository = ChatRepositoryImpl(mqttManager, currentUserId, chatDao, messageDao, testScope)
@@ -174,5 +179,95 @@ class ChatRepositoryImplTest {
         coVerify { messageDao.insertMessage(match { it.chatId == "friend_me" }) }
 
         coroutineContext.cancelChildren()
+    }
+
+    @Test
+    fun `when sendMessage uses canonical chatId then receiver is the other participant`() = testScope.runTest {
+        repository.sendMessage("friend_me", "Hi")
+        advanceUntilIdle()
+
+        coVerify {
+            mqttManager.sendMessage(
+                match { it.receiverId == "friend" && it.senderId == currentUserId && it.text == "Hi" }
+            )
+        }
+        coroutineContext.cancelChildren()
+    }
+
+    @Test
+    fun `when incoming message for existing chat then unread increments`() = testScope.runTest {
+        seedExistingChat(unread = 2)
+        launch { repository.allChats.collect { } }
+        advanceUntilIdle()
+
+        incomingMessagesFlow.emit(
+            Message(
+                chatId = "ignored",
+                senderId = "friend",
+                receiverId = currentUserId,
+                text = "Hello",
+            )
+        )
+        advanceUntilIdle()
+
+        coVerify { chatDao.updateUnreadCount("friend_me", 3) }
+        coVerify(exactly = 0) { chatDao.insertChat(any()) }
+
+        coroutineContext.cancelChildren()
+    }
+
+    @Test
+    fun `when outgoing message for existing chat then unread stays`() = testScope.runTest {
+        seedExistingChat(unread = 2)
+        launch { repository.allChats.collect { } }
+        advanceUntilIdle()
+
+        repository.sendMessage("friend_me", "Hi")
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { chatDao.updateUnreadCount(any(), any()) }
+        coVerify(exactly = 0) { chatDao.insertChat(any()) }
+
+        coroutineContext.cancelChildren()
+    }
+
+    @Test
+    fun `when retry publish fails then status is ERROR`() = testScope.runTest {
+        val pending = listOf(
+            MessageEntity(
+                id = "err-2",
+                chatId = "friend_me",
+                senderId = currentUserId,
+                receiverId = "friend",
+                text = "offline",
+                timestamp = 1L,
+                status = MessageStatus.ERROR,
+                type = MessageType.TEXT
+            )
+        )
+        coEvery { messageDao.getOutgoingPending(currentUserId, any()) } returns pending
+        coEvery { mqttManager.sendMessage(any()) } throws IllegalStateException("MQTT not connected")
+
+        connectionStatus.value = true
+        advanceUntilIdle()
+
+        coVerify { messageDao.updateStatus("err-2", MessageStatus.SENDING) }
+        coVerify { mqttManager.sendMessage(match { it.id == "err-2" }) }
+        coVerify { messageDao.updateStatus("err-2", MessageStatus.ERROR) }
+
+        coroutineContext.cancelChildren()
+    }
+
+    private fun seedExistingChat(unread: Int) {
+        chatsWithLastMessage.value = listOf(
+            ChatWithLastMessage(
+                ChatEntity(
+                    id = "friend_me",
+                    name = "friend",
+                    unreadCount = unread,
+                ),
+                emptyList(),
+            )
+        )
     }
 }

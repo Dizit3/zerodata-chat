@@ -10,6 +10,7 @@ import com.zerodata.chat.network.MqttPayloadMapperImpl
 import com.zerodata.chat.network.RealMqttManager
 import com.zerodata.chat.repository.ChatRepository
 import com.zerodata.chat.repository.ChatRepositoryImpl
+import com.zerodata.chat.util.UpdateManager
 import com.zerodata.chat.viewmodel.ChatViewModel
 import com.zerodata.chat.viewmodel.LobbyViewModel
 import com.zerodata.chat.viewmodel.MainViewModel
@@ -49,8 +50,10 @@ val appModule = module {
     // Repository
     single<ChatRepository> { ChatRepositoryImpl(get(), get<String>(), get(), get()) }
 
+    single { UpdateManager(androidContext()) }
+
     // ViewModels
-    viewModel { MainViewModel(get(), androidContext()) }
+    viewModel { MainViewModel(get(), androidContext(), get()) }
     viewModel { (chatId: String) -> ChatViewModel(get<ChatRepository>(), chatId) }
     viewModel { LobbyViewModel(get<MqttDiscoveryManager>(), get<String>()) }
 }

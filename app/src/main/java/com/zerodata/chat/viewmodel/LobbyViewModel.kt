@@ -8,11 +8,16 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-class LobbyViewModel(private val mqttManager: MqttDiscoveryManager, private val currentUserId: String) : ViewModel() {
+class LobbyViewModel(
+    private val mqttManager: MqttDiscoveryManager,
+    private val currentUserId: String,
+    private val nowMillis: () -> Long = { System.currentTimeMillis() },
+) : ViewModel() {
 
     private val _users = MutableStateFlow<Map<String, Long>>(emptyMap())
     val users: StateFlow<List<String>> = _users.map { map ->
-        map.filter { it.key != currentUserId && System.currentTimeMillis() - it.value < Constants.LOBBY_PEER_TTL_MS }
+        val now = nowMillis()
+        map.filter { it.key != currentUserId && now - it.value < Constants.LOBBY_PEER_TTL_MS }
             .keys.toList()
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
@@ -28,8 +33,9 @@ class LobbyViewModel(private val mqttManager: MqttDiscoveryManager, private val 
         viewModelScope.launch {
             while (true) {
                 delay(Constants.LOBBY_HEARTBEAT_MS)
+                val now = nowMillis()
                 _users.update { currentMap ->
-                    currentMap.filter { System.currentTimeMillis() - it.value < Constants.LOBBY_PEER_TTL_MS }
+                    currentMap.filter { now - it.value < Constants.LOBBY_PEER_TTL_MS }
                 }
             }
         }

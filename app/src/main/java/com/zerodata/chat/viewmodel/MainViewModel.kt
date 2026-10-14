@@ -11,14 +11,13 @@ import com.zerodata.chat.util.UpdateManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 import android.content.Context
 import timber.log.Timber
 
 class MainViewModel(
     private val repository: ChatRepository,
-    private val context: Context
+    private val context: Context,
+    private val updateManager: UpdateManager = UpdateManager(context),
 ) : ViewModel() {
     
     val chats: StateFlow<List<Chat>> = repository.allChats
@@ -32,8 +31,6 @@ class MainViewModel(
 
     private val _updateProgress = MutableStateFlow<String?>(null)
     val updateProgress = _updateProgress.asStateFlow()
-
-    private val updateManager = UpdateManager(context)
 
     init {
         checkForUpdates()

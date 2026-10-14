@@ -27,12 +27,20 @@ class MqttPayloadMapperImpl : MqttPayloadMapper {
         coerceInputValues = true
     }
 
-    override fun toMessageJson(message: Message): String = jsonObject.encodeToString(message)
+    override fun toMessageJson(message: Message): String =
+        jsonObject.encodeToString(message.toCompactWire())
 
-    override fun fromMessageJson(json: String): Message? = try {
-        jsonObject.decodeFromString<Message>(json)
-    } catch (e: Exception) {
-        null
+    override fun fromMessageJson(json: String): Message? {
+        if (json.isBlank()) return null
+        return try {
+            jsonObject.decodeFromString<CompactMessageWire>(json).toDomainMessage()
+        } catch (_: Exception) {
+            try {
+                jsonObject.decodeFromString<Message>(json)
+            } catch (_: Exception) {
+                null
+            }
+        }
     }
 
     override fun toLobbyJson(presence: LobbyPresence): String = jsonObject.encodeToString(presence)

@@ -38,11 +38,7 @@ class UpdateManager(private val context: Context) {
                 // Using getReleases instead of getLatestRelease because 'latest' excludes pre-releases
                 val releases = gitHubApi.getReleases(owner, repo)
                 val current = AppVersion.parse(BuildConfig.VERSION_NAME)
-                val release = releases.firstOrNull { candidate ->
-                    !candidate.draft &&
-                        candidate.assets.any { it.name.endsWith(".apk", ignoreCase = true) } &&
-                        AppVersion.parse(candidate.tagName) > current
-                }
+                val release = UpdateSelector.firstNewerApk(releases, current)
                 if (release != null) {
                     Timber.d("Update found: remote=%s, local=%s", release.tagName, BuildConfig.VERSION_NAME)
                 } else {
