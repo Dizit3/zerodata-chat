@@ -36,6 +36,13 @@ class MqttManagerMock : MqttManager {
 
     override fun observeMessages(): Flow<Message> = _incomingMessages.asSharedFlow()
 
+    private val _inbound = MutableSharedFlow<MqttInbound>()
+    override fun observeInbound(): Flow<MqttInbound> = _inbound.asSharedFlow()
+
+    override suspend fun sendReceipt(recipientId: String, kind: ReceiptKind, messageId: String) {
+        println("Receipt $kind for $messageId to $recipientId")
+    }
+
     override fun joinLobby() {
         println("Joined lobby (mock)")
     }

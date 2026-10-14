@@ -24,6 +24,7 @@ class RealMqttManager(
     override val connectionStatus = _connectionStatus.asStateFlow()
 
     private val _incomingMessages = MutableSharedFlow<Message>(extraBufferCapacity = 64)
+    private val _inbound = MutableSharedFlow<MqttInbound>(extraBufferCapacity = 64)
 
     override suspend fun connect() {
         if (mqttClient.isConnected) {
@@ -75,9 +76,11 @@ class RealMqttManager(
                         if (topic == Constants.TOPIC_LOBBY) {
                             handleLobbyMessage(payload)
                         } else {
-                            payloadMapper.fromMessageJson(payload)?.let { msg ->
-                                // Pass message directly, repository will handle chatId derivation
-                                _incomingMessages.tryEmit(msg)
+                            payloadMapper.parseInbound(payload)?.let { inbound ->
+                                _inbound.tryEmit(inbound)
+                                if (inbound is MqttInbound.ChatMessage) {
+                                    _incomingMessages.tryEmit(inbound.message)
+                                }
                             }
                         }
                     }
@@ -132,6 +135,21 @@ class RealMqttManager(
     }
 
     override fun observeMessages(): Flow<Message> = _incomingMessages.asSharedFlow()
+
+    override fun observeInbound(): Flow<MqttInbound> = _inbound.asSharedFlow()
+
+    override suspend fun sendReceipt(recipientId: String, kind: ReceiptKind, messageId: String) {
+        if (!mqttClient.isConnected) return
+        val topic = "${Constants.TOPIC_PREFIX}/$recipientId/${Constants.TOPIC_INBOX_SUFFIX}"
+        val mqttMessage = MqttMessage(payloadMapper.toReceiptJson(kind, messageId).toByteArray()).apply {
+            qos = Constants.QOS_LEAST_ONCE
+        }
+        try {
+            mqttClient.publish(topic, mqttMessage)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to publish receipt")
+        }
+    }
 
     private val _lobbyPresences = MutableSharedFlow<LobbyPresence>(extraBufferCapacity = 64)
     private var lobbyJob: kotlinx.coroutines.Job? = null

@@ -38,4 +38,9 @@ interface ChatRepository {
      * Сбросить счетчик непрочитанных для чата.
      */
     fun clearUnread(chatId: String)
+
+    /**
+     * Открытый чат: входящие помечаются прочитанными (ACK на 2G).
+     */
+    fun setActiveChat(chatId: String?)
 }

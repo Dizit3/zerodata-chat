@@ -13,6 +13,8 @@ interface MqttMessagingManager {
     suspend fun disconnect()
     suspend fun sendMessage(message: Message)
     fun observeMessages(): Flow<Message>
+    fun observeInbound(): Flow<MqttInbound>
+    suspend fun sendReceipt(recipientId: String, kind: ReceiptKind, messageId: String)
 }
 
 /**

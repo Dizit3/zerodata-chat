@@ -13,7 +13,9 @@ import kotlinx.serialization.decodeFromString
 interface MqttPayloadMapper {
     fun toMessageJson(message: Message): String
     fun fromMessageJson(json: String): Message?
-    
+    fun parseInbound(json: String): MqttInbound?
+    fun toReceiptJson(kind: ReceiptKind, messageId: String): String
+
     fun toLobbyJson(presence: LobbyPresence): String
     fun fromLobbyJson(json: String): LobbyPresence?
 }
@@ -28,20 +30,33 @@ class MqttPayloadMapperImpl : MqttPayloadMapper {
     }
 
     override fun toMessageJson(message: Message): String =
-        jsonObject.encodeToString(message.toCompactWire())
+        jsonObject.encodeToString(CompactMessageWire.from(message))
 
-    override fun fromMessageJson(json: String): Message? {
+    override fun fromMessageJson(json: String): Message? =
+        (parseInbound(json) as? MqttInbound.ChatMessage)?.message
+
+    override fun parseInbound(json: String): MqttInbound? {
         if (json.isBlank()) return null
+        try {
+            val receipt = jsonObject.decodeFromString<CompactReceiptWire>(json).toInbound()
+            if (receipt != null) return receipt
+        } catch (_: Exception) {
+        }
         return try {
-            jsonObject.decodeFromString<CompactMessageWire>(json).toDomainMessage()
+            MqttInbound.ChatMessage(
+                jsonObject.decodeFromString<CompactMessageWire>(json).toDomain()
+            )
         } catch (_: Exception) {
             try {
-                jsonObject.decodeFromString<Message>(json)
+                MqttInbound.ChatMessage(jsonObject.decodeFromString<Message>(json))
             } catch (_: Exception) {
                 null
             }
         }
     }
+
+    override fun toReceiptJson(kind: ReceiptKind, messageId: String): String =
+        jsonObject.encodeToString(CompactReceiptWire(kind.wireCode(), messageId))
 
     override fun toLobbyJson(presence: LobbyPresence): String = jsonObject.encodeToString(presence)
 

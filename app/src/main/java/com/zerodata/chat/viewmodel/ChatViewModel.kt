@@ -14,9 +14,18 @@ class ChatViewModel(
     
     val messages: StateFlow<List<Message>> = repository.getMessages(chatId)
 
+    init {
+        repository.setActiveChat(chatId)
+    }
+
     fun sendMessage(text: String) {
         viewModelScope.launch {
             repository.sendMessage(chatId, text)
         }
+    }
+
+    override fun onCleared() {
+        repository.setActiveChat(null)
+        super.onCleared()
     }
 }

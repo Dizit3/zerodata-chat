@@ -7,7 +7,10 @@ import com.zerodata.chat.database.MessageEntity
 import com.zerodata.chat.model.Chat
 import com.zerodata.chat.model.Message
 import com.zerodata.chat.model.MessageStatus
+import com.zerodata.chat.model.deliveryRank
+import com.zerodata.chat.network.MqttInbound
 import com.zerodata.chat.network.MqttMessagingManager
+import com.zerodata.chat.network.ReceiptKind
 import com.zerodata.chat.util.ChatUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -43,6 +46,9 @@ class ChatRepositoryImpl(
     private val _connectionStatus = MutableStateFlow(false)
     override val connectionStatus: StateFlow<Boolean> = _connectionStatus.asStateFlow()
 
+    @Volatile
+    private var activeChatId: String? = null
+
     init {
         // Инициируем подключение
         scope.launch {
@@ -59,10 +65,12 @@ class ChatRepositoryImpl(
             }
         }
 
-        // Наблюдаем за входящими сообщениями
         scope.launch {
-            mqttManager.observeMessages().collect { message ->
-                handleIncomingMessage(message)
+            mqttManager.observeInbound().collect { inbound ->
+                when (inbound) {
+                    is MqttInbound.ChatMessage -> handleIncomingMessage(inbound.message)
+                    is MqttInbound.Receipt -> applyReceipt(inbound)
+                }
             }
         }
     }
@@ -113,8 +121,42 @@ class ChatRepositoryImpl(
         }
     }
 
+    override fun setActiveChat(chatId: String?) {
+        activeChatId = chatId
+        if (chatId != null) {
+            scope.launch {
+                chatDao.updateUnreadCount(chatId, 0)
+                sendReadReceipts(chatId)
+            }
+        }
+    }
+
     private suspend fun handleIncomingMessage(message: Message) {
         saveMessageAndHandleChat(message)
+        if (message.senderId == currentUserId) return
+        val chatId = ChatUtils.getCanonicalChatId(message.senderId, message.receiverId)
+        val kind = if (activeChatId == chatId) ReceiptKind.READ else ReceiptKind.DELIVERED
+        mqttManager.sendReceipt(message.senderId, kind, message.id)
+    }
+
+    private suspend fun applyReceipt(receipt: MqttInbound.Receipt) {
+        val existing = messageDao.getById(receipt.messageId) ?: return
+        if (existing.senderId != currentUserId) return
+        if (existing.status == MessageStatus.ERROR) return
+        val next = when (receipt.kind) {
+            ReceiptKind.DELIVERED -> MessageStatus.DELIVERED
+            ReceiptKind.READ -> MessageStatus.READ
+        }
+        if (next.deliveryRank() > existing.status.deliveryRank()) {
+            messageDao.updateStatus(existing.id, next)
+        }
+    }
+
+    private suspend fun sendReadReceipts(chatId: String) {
+        val incoming = messageDao.getIncomingForChat(chatId, currentUserId)
+        for (entity in incoming) {
+            mqttManager.sendReceipt(entity.senderId, ReceiptKind.READ, entity.id)
+        }
     }
 
     private suspend fun publishOutgoing(message: Message) {

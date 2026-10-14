@@ -39,6 +39,12 @@ interface MessageDao {
 
     @Query("SELECT * FROM messages WHERE chatId = :chatId ORDER BY timestamp DESC LIMIT 1")
     suspend fun getLastMessageForChat(chatId: String): MessageEntity?
+
+    @Query("SELECT * FROM messages WHERE id = :id LIMIT 1")
+    suspend fun getById(id: String): MessageEntity?
+
+    @Query("SELECT * FROM messages WHERE chatId = :chatId AND senderId != :userId")
+    suspend fun getIncomingForChat(chatId: String, userId: String): List<MessageEntity>
 }
 
 data class ChatWithLastMessage(

@@ -118,4 +118,37 @@ class MqttPayloadMapperTest {
         assertNull(mapper.fromLobbyJson(""))
         assertNull(mapper.fromLobbyJson("{}"))
     }
+
+    @Test
+    fun `receipt json round-trip`() {
+        val json = mapper.toReceiptJson(ReceiptKind.DELIVERED, "msg-9")
+        assertTrue(json.contains("\"k\":\"d\""))
+        assertTrue(json.contains("\"i\":\"msg-9\""))
+        val inbound = mapper.parseInbound(json)
+        assertEquals(MqttInbound.Receipt(ReceiptKind.DELIVERED, "msg-9"), inbound)
+        assertNull(mapper.fromMessageJson(json))
+    }
+
+    @Test
+    fun `parseInbound reads read receipt`() {
+        val inbound = mapper.parseInbound("""{"k":"r","i":"m1"}""")
+        assertEquals(MqttInbound.Receipt(ReceiptKind.READ, "m1"), inbound)
+    }
+
+    @Test
+    fun `parseInbound still reads compact chat message`() {
+        val json = mapper.toMessageJson(
+            Message(
+                id = "c1",
+                chatId = "a_b",
+                senderId = "a",
+                receiverId = "b",
+                text = "hi",
+                timestamp = 1L,
+            )
+        )
+        val inbound = mapper.parseInbound(json)
+        assertTrue(inbound is MqttInbound.ChatMessage)
+        assertEquals("c1", (inbound as MqttInbound.ChatMessage).message.id)
+    }
 }

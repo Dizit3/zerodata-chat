@@ -1,8 +1,13 @@
 package com.zerodata.chat.ui.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.DoneAll
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -12,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.zerodata.chat.model.Message
+import com.zerodata.chat.model.MessageStatus
 
 /**
  * Пузырек сообщения в стиле Telegram.
@@ -51,17 +57,40 @@ fun MessageBubble(message: Message, isMine: Boolean) {
                 
                 Row(
                     modifier = Modifier.align(Alignment.End),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
                     Text(
                         text = formatTime(message.timestamp),
                         color = textColor.copy(alpha = 0.5f),
                         fontSize = 10.sp
                     )
+                    if (isMine) {
+                        DeliveryTicks(status = message.status)
+                    }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun DeliveryTicks(status: MessageStatus) {
+    val muted = Color.White.copy(alpha = 0.5f)
+    val readBlue = Color(0xFF90CAF9)
+    val (icon, tint) = when (status) {
+        MessageStatus.SENDING -> Icons.Default.Schedule to muted
+        MessageStatus.SENT -> Icons.Default.Done to muted
+        MessageStatus.DELIVERED -> Icons.Default.DoneAll to muted
+        MessageStatus.READ -> Icons.Default.DoneAll to readBlue
+        MessageStatus.ERROR -> Icons.Default.Error to Color(0xFFFF8A80)
+    }
+    Icon(
+        imageVector = icon,
+        contentDescription = status.name,
+        modifier = Modifier.size(14.dp),
+        tint = tint
+    )
 }
 
 fun formatTime(timestamp: Long): String {

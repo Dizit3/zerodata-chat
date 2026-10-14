@@ -13,21 +13,23 @@ internal data class CompactMessageWire(
     @SerialName("t") val receiverId: String,
     @SerialName("x") val text: String,
     @SerialName("ts") val timestamp: Long,
-)
+) {
+    fun toDomain(): Message = Message(
+        id = id,
+        chatId = ChatUtils.getCanonicalChatId(senderId, receiverId),
+        senderId = senderId,
+        receiverId = receiverId,
+        text = text,
+        timestamp = timestamp,
+    )
 
-internal fun Message.toCompactWire(): CompactMessageWire = CompactMessageWire(
-    id = id,
-    senderId = senderId,
-    receiverId = receiverId,
-    text = text,
-    timestamp = timestamp,
-)
-
-internal fun CompactMessageWire.toDomainMessage(): Message = Message(
-    id = id,
-    chatId = ChatUtils.getCanonicalChatId(senderId, receiverId),
-    senderId = senderId,
-    receiverId = receiverId,
-    text = text,
-    timestamp = timestamp,
-)
+    companion object {
+        fun from(message: Message) = CompactMessageWire(
+            id = message.id,
+            senderId = message.senderId,
+            receiverId = message.receiverId,
+            text = message.text,
+            timestamp = message.timestamp,
+        )
+    }
+}

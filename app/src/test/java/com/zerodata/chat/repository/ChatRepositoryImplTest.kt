@@ -6,7 +6,9 @@ import com.zerodata.chat.database.MessageEntity
 import com.zerodata.chat.model.Message
 import com.zerodata.chat.model.MessageStatus
 import com.zerodata.chat.model.MessageType
+import com.zerodata.chat.network.MqttInbound
 import com.zerodata.chat.network.MqttManager
+import com.zerodata.chat.network.ReceiptKind
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -36,7 +38,7 @@ class ChatRepositoryImplTest {
     private val mqttManager: MqttManager = mockk(relaxed = true)
     private val chatDao: com.zerodata.chat.database.ChatDao = mockk(relaxed = true)
     private val messageDao: com.zerodata.chat.database.MessageDao = mockk(relaxed = true)
-    private val incomingMessagesFlow = MutableSharedFlow<Message>(extraBufferCapacity = 64)
+    private val inboundFlow = MutableSharedFlow<MqttInbound>(extraBufferCapacity = 64)
     private val connectionStatus = MutableStateFlow(false)
     private val chatsWithLastMessage = MutableStateFlow<List<ChatWithLastMessage>>(emptyList())
 
@@ -47,7 +49,7 @@ class ChatRepositoryImplTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         chatsWithLastMessage.value = emptyList()
-        every { mqttManager.observeMessages() } returns incomingMessagesFlow
+        every { mqttManager.observeInbound() } returns inboundFlow
         every { mqttManager.connectionStatus } returns connectionStatus
         every { chatDao.getChatsWithLastMessageFlow() } returns chatsWithLastMessage
         every { messageDao.getMessagesForChatFlow(any()) } returns flowOf(emptyList())
@@ -66,7 +68,7 @@ class ChatRepositoryImplTest {
         val message = Message(chatId = "friend", senderId = "friend", text = "Hello")
 
         // When
-        incomingMessagesFlow.emit(message)
+        inboundFlow.emit(MqttInbound.ChatMessage(message))
         advanceUntilIdle()
 
         // Then
@@ -170,7 +172,7 @@ class ChatRepositoryImplTest {
         val message = Message(chatId = "some_random_id", senderId = "friend", text = "Hello", receiverId = "me")
 
         // When
-        incomingMessagesFlow.emit(message)
+        inboundFlow.emit(MqttInbound.ChatMessage(message))
         advanceUntilIdle()
 
         // Then
@@ -200,12 +202,14 @@ class ChatRepositoryImplTest {
         launch { repository.allChats.collect { } }
         advanceUntilIdle()
 
-        incomingMessagesFlow.emit(
-            Message(
-                chatId = "ignored",
-                senderId = "friend",
-                receiverId = currentUserId,
-                text = "Hello",
+        inboundFlow.emit(
+            MqttInbound.ChatMessage(
+                Message(
+                    chatId = "ignored",
+                    senderId = "friend",
+                    receiverId = currentUserId,
+                    text = "Hello",
+                )
             )
         )
         advanceUntilIdle()
@@ -254,6 +258,120 @@ class ChatRepositoryImplTest {
         coVerify { messageDao.updateStatus("err-2", MessageStatus.SENDING) }
         coVerify { mqttManager.sendMessage(match { it.id == "err-2" }) }
         coVerify { messageDao.updateStatus("err-2", MessageStatus.ERROR) }
+
+        coroutineContext.cancelChildren()
+    }
+
+    @Test
+    fun `incoming chat sends delivery receipt`() = testScope.runTest {
+        val message = Message(
+            id = "in-1",
+            chatId = "friend_me",
+            senderId = "friend",
+            receiverId = currentUserId,
+            text = "Hello",
+        )
+        inboundFlow.emit(MqttInbound.ChatMessage(message))
+        advanceUntilIdle()
+
+        coVerify { mqttManager.sendReceipt("friend", ReceiptKind.DELIVERED, "in-1") }
+
+        coroutineContext.cancelChildren()
+    }
+
+    @Test
+    fun `incoming chat while active sends read receipt`() = testScope.runTest {
+        coEvery { messageDao.getIncomingForChat(any(), any()) } returns emptyList()
+        repository.setActiveChat("friend_me")
+        advanceUntilIdle()
+
+        val message = Message(
+            id = "in-2",
+            chatId = "friend_me",
+            senderId = "friend",
+            receiverId = currentUserId,
+            text = "Hello",
+        )
+        inboundFlow.emit(MqttInbound.ChatMessage(message))
+        advanceUntilIdle()
+
+        coVerify { mqttManager.sendReceipt("friend", ReceiptKind.READ, "in-2") }
+
+        coroutineContext.cancelChildren()
+    }
+
+    @Test
+    fun `delivery receipt upgrades SENT to DELIVERED`() = testScope.runTest {
+        coEvery { messageDao.getById("out-1") } returns MessageEntity(
+            id = "out-1",
+            chatId = "friend_me",
+            senderId = currentUserId,
+            receiverId = "friend",
+            text = "Hi",
+            timestamp = 1L,
+            status = MessageStatus.SENT,
+            type = MessageType.TEXT,
+        )
+
+        inboundFlow.emit(MqttInbound.Receipt(ReceiptKind.DELIVERED, "out-1"))
+        advanceUntilIdle()
+
+        coVerify { messageDao.updateStatus("out-1", MessageStatus.DELIVERED) }
+        coVerify(exactly = 0) { messageDao.insertMessage(any()) }
+
+        coroutineContext.cancelChildren()
+    }
+
+    @Test
+    fun `read receipt upgrades past delivered`() = testScope.runTest {
+        coEvery { messageDao.getById("out-2") } returns MessageEntity(
+            id = "out-2",
+            chatId = "friend_me",
+            senderId = currentUserId,
+            receiverId = "friend",
+            text = "Hi",
+            timestamp = 1L,
+            status = MessageStatus.DELIVERED,
+            type = MessageType.TEXT,
+        )
+
+        inboundFlow.emit(MqttInbound.Receipt(ReceiptKind.READ, "out-2"))
+        advanceUntilIdle()
+
+        coVerify { messageDao.updateStatus("out-2", MessageStatus.READ) }
+
+        coroutineContext.cancelChildren()
+    }
+
+    @Test
+    fun `unknown receipt id is ignored`() = testScope.runTest {
+        coEvery { messageDao.getById("missing") } returns null
+
+        inboundFlow.emit(MqttInbound.Receipt(ReceiptKind.DELIVERED, "missing"))
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { messageDao.updateStatus("missing", any()) }
+
+        coroutineContext.cancelChildren()
+    }
+
+    @Test
+    fun `receipt does not downgrade READ`() = testScope.runTest {
+        coEvery { messageDao.getById("out-3") } returns MessageEntity(
+            id = "out-3",
+            chatId = "friend_me",
+            senderId = currentUserId,
+            receiverId = "friend",
+            text = "Hi",
+            timestamp = 1L,
+            status = MessageStatus.READ,
+            type = MessageType.TEXT,
+        )
+
+        inboundFlow.emit(MqttInbound.Receipt(ReceiptKind.DELIVERED, "out-3"))
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { messageDao.updateStatus("out-3", MessageStatus.DELIVERED) }
 
         coroutineContext.cancelChildren()
     }
