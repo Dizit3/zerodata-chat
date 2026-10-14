@@ -27,6 +27,16 @@ cursor-harness --version   # cursor-harness v3.2.1
 cursor-harness enhance . --spec docs/development/enhancement_spec.txt
 ```
 
+**Windows (cmd):** Python 3.11 по умолчанию пишет файлы в cp1251, и harness 3.2.1 падает на emoji в хуках (`charmap codec can't encode`). Запускать из корня git-клона (там лежат `docs\development\enhancement_spec.txt` и `.git`):
+
+```bat
+set PYTHONUTF8=1
+set PYTHONIOENCODING=utf-8
+python -m cursor_harness.cli enhance . --spec docs\development\enhancement_spec.txt
+```
+
+Или после `git pull`: `scripts\enhance.cmd`.
+
 Нужны Cursor login / `cursor-agent`. CLI сам ставит `cursor-agent` (фича 3.2.1). Puppeteer MCP **не** добавлялся: UI нативный, не браузерный. Проверка — `./gradlew test` и при наличии устройства `./gradlew connectedAndroidTest`.
 
 ## Артефакты
