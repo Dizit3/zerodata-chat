@@ -77,6 +77,14 @@ fun ChatListScreen(
                     }
                 )
         },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showAddDialog = true },
+                containerColor = MaterialTheme.colorScheme.primary
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Новый чат")
+            }
+        },
         containerColor = Color(0xFF121212)
     ) { padding ->
         LazyColumn(

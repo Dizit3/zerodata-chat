@@ -16,4 +16,3 @@
     - [x] Создать MessageComponents и LobbyComponents <!-- id: 28 -->
     - [x] Отрефакторить экраны (ChatList, Chat, Lobby) <!-- id: 29 -->
 - [x] Проверить сборку через `./gradlew test` <!-- id: 5 --> (Исправлены логические ошибки сборки)
-- [x] Подключить nirmalarya/cursor-harness v3.2.1 (enhance) <!-- id: 30 -->

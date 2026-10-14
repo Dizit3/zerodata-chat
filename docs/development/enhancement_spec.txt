@@ -1,4 +1,4 @@
-# ZeroData Chat — spec for cursor-harness enhance
+# ZeroData Chat — blackout MVP spec
 
 Product: MVP text messenger for Ukraine blackouts / overloaded mobile networks.
 Goal: send short messages with minimal radio time and payload, survive flaky 2G/3G/LTE,

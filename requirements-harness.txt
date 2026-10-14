@@ -1,4 +1,0 @@
-# Pin cursor-harness for autonomous enhancement sessions.
-# Not published on PyPI; install from the GitHub tag.
-#   pip install -r requirements-harness.txt
-git+https://github.com/nirmalarya/cursor-harness.git@v3.2.1

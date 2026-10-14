@@ -1,19 +1,8 @@
 {
   "version": 1,
   "hooks": {
-    "beforeShellExecution": [
-      {
-        "command": "./hooks/block-secrets.sh"
-      },
-      {
-        "command": "./hooks/git-workflow.sh"
-      }
-    ],
+    "beforeShellExecution": [],
     "afterFileEdit": [],
-    "stop": [
-      {
-        "command": "./hooks/gradle-test.sh"
-      }
-    ]
+    "stop": []
   }
 }

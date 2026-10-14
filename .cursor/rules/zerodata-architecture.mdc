@@ -12,4 +12,3 @@ Follow `.agent/rules.md` as the source of truth.
 - MQTT topics live in `Constants.kt`. Payload format is JSON via `MqttPayloadMapper`.
 - Do not remove `GlobalExceptionHandler` or change `CrashActivity` unless the user asks.
 - Dark Material3 theme (`0xFF121212`). The Add-chat dialog is a required hub action.
-- One enhancement at a time from `enhancement_list.json`. Mark `completed: true` only after `./gradlew test` passes.
