@@ -6,6 +6,10 @@ import org.junit.Test
 
 class FirstRunOsPromptsTest {
 
+    private val off = FirstRunOsPrompts.DataSaverPromptStatus.SAVER_OFF
+    private val restricted = FirstRunOsPrompts.DataSaverPromptStatus.RESTRICTED
+    private val ok = FirstRunOsPrompts.DataSaverPromptStatus.WHITELISTED
+
     @Test
     fun `battery dialog only on first run when not already ignoring`() {
         assertTrue(FirstRunOsPrompts.shouldRequestBatteryExemption(false, false))
@@ -15,14 +19,19 @@ class FirstRunOsPromptsTest {
     }
 
     @Test
-    fun `data saver prompt when saver off or app restricted, once`() {
-        val off = FirstRunOsPrompts.DataSaverPromptStatus.SAVER_OFF
-        val restricted = FirstRunOsPrompts.DataSaverPromptStatus.RESTRICTED
-        val ok = FirstRunOsPrompts.DataSaverPromptStatus.WHITELISTED
-        assertTrue(FirstRunOsPrompts.shouldPromptDataSaver(off, false))
-        assertTrue(FirstRunOsPrompts.shouldPromptDataSaver(restricted, false))
-        assertFalse(FirstRunOsPrompts.shouldPromptDataSaver(ok, false))
-        assertFalse(FirstRunOsPrompts.shouldPromptDataSaver(off, true))
-        assertFalse(FirstRunOsPrompts.shouldPromptDataSaver(restricted, true))
+    fun `saver toggle dialog only when saver off and not yet asked`() {
+        assertTrue(FirstRunOsPrompts.shouldPromptSaverToggle(off, false))
+        assertFalse(FirstRunOsPrompts.shouldPromptSaverToggle(off, true))
+        assertFalse(FirstRunOsPrompts.shouldPromptSaverToggle(restricted, false))
+        assertFalse(FirstRunOsPrompts.shouldPromptSaverToggle(ok, false))
+    }
+
+    @Test
+    fun `exception dialog after toggle asked or when already restricted`() {
+        assertTrue(FirstRunOsPrompts.shouldPromptException(off, true, false))
+        assertTrue(FirstRunOsPrompts.shouldPromptException(restricted, false, false))
+        assertFalse(FirstRunOsPrompts.shouldPromptException(off, false, false))
+        assertFalse(FirstRunOsPrompts.shouldPromptException(ok, true, false))
+        assertFalse(FirstRunOsPrompts.shouldPromptException(restricted, true, true))
     }
 }

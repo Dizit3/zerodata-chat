@@ -77,12 +77,12 @@ fun MessageBubble(message: Message, isMine: Boolean) {
 @Composable
 private fun DeliveryTicks(status: MessageStatus) {
     val muted = Color.White.copy(alpha = 0.5f)
-    val readBlue = Color(0xFF90CAF9)
+    val readGreen = Color(0xFF69F0AE)
     val (icon, tint) = when (status) {
         MessageStatus.SENDING -> Icons.Default.Schedule to muted
         MessageStatus.SENT -> Icons.Default.Done to muted
         MessageStatus.DELIVERED -> Icons.Default.DoneAll to muted
-        MessageStatus.READ -> Icons.Default.DoneAll to readBlue
+        MessageStatus.READ -> Icons.Default.DoneAll to readGreen
         MessageStatus.ERROR -> Icons.Default.Error to Color(0xFFFF8A80)
     }
     Icon(

@@ -17,7 +17,8 @@ import timber.log.Timber
 object FirstRunOsPrompts {
     private const val PREFS = "zerodata_os_prompts"
     private const val KEY_BATTERY_ASKED = "battery_exemption_asked"
-    private const val KEY_DATA_SAVER_ASKED = "data_saver_asked"
+    private const val KEY_DATA_SAVER_TOGGLE_ASKED = "data_saver_toggle_asked"
+    private const val KEY_DATA_SAVER_EXCEPTION_ASKED = "data_saver_exception_asked"
 
     enum class DataSaverPromptStatus {
         /** Data Saver off — other apps can still eat 2G. */
@@ -32,15 +33,65 @@ object FirstRunOsPrompts {
         return !alreadyIgnoring && !alreadyAsked
     }
 
-    fun shouldPromptDataSaver(status: DataSaverPromptStatus, alreadyAsked: Boolean): Boolean {
-        return !alreadyAsked && status != DataSaverPromptStatus.WHITELISTED
+    fun shouldPromptSaverToggle(
+        status: DataSaverPromptStatus,
+        toggleAsked: Boolean,
+    ): Boolean = !toggleAsked && status == DataSaverPromptStatus.SAVER_OFF
+
+    fun shouldPromptException(
+        status: DataSaverPromptStatus,
+        toggleAsked: Boolean,
+        exceptionAsked: Boolean,
+    ): Boolean {
+        if (exceptionAsked || status == DataSaverPromptStatus.WHITELISTED) return false
+        return toggleAsked || status == DataSaverPromptStatus.RESTRICTED
     }
 
     fun requestIfNeeded(activity: Activity) {
         requestNotificationsIfNeeded(activity)
         val openedBattery = requestBatteryExemptionIfNeeded(activity)
         if (!openedBattery) {
-            requestDataSaverIfNeeded(activity)
+            requestDataSaverStepsIfNeeded(activity)
+        }
+    }
+
+    fun requestDataSaverStepsIfNeeded(activity: Activity) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return
+        if (activity.isFinishing || activity.isDestroyed) return
+        val status = currentDataSaverStatus(activity) ?: return
+        val prefs = activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val toggleAsked = prefs.getBoolean(KEY_DATA_SAVER_TOGGLE_ASKED, false)
+        val exceptionAsked = prefs.getBoolean(KEY_DATA_SAVER_EXCEPTION_ASKED, false)
+
+        if (shouldPromptSaverToggle(status, toggleAsked)) {
+            prefs.edit().putBoolean(KEY_DATA_SAVER_TOGGLE_ASKED, true).apply()
+            AlertDialog.Builder(activity)
+                .setTitle("Экономия трафика")
+                .setMessage(
+                    "На 2G другие приложения могут съесть канал. Сначала включите экономию трафика."
+                )
+                .setPositiveButton("Открыть") { _, _ ->
+                    openDataSaverSettings(activity)
+                }
+                .setNegativeButton("Позже") { _, _ ->
+                    requestDataSaverStepsIfNeeded(activity)
+                }
+                .show()
+            return
+        }
+
+        if (shouldPromptException(status, toggleAsked, exceptionAsked)) {
+            prefs.edit().putBoolean(KEY_DATA_SAVER_EXCEPTION_ASKED, true).apply()
+            AlertDialog.Builder(activity)
+                .setTitle("Исключение ZeroData")
+                .setMessage(
+                    "Разрешите ZeroData без ограничений при экономии трафика, иначе MQTT в фоне могут обрезать."
+                )
+                .setPositiveButton("Открыть") { _, _ ->
+                    openUnrestrictedDataSettings(activity)
+                }
+                .setNegativeButton("Позже", null)
+                .show()
         }
     }
 
@@ -75,29 +126,6 @@ object FirstRunOsPrompts {
         }
     }
 
-    private fun requestDataSaverIfNeeded(activity: Activity) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return
-        val status = currentDataSaverStatus(activity) ?: return
-        val prefs = activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        val asked = prefs.getBoolean(KEY_DATA_SAVER_ASKED, false)
-        if (!shouldPromptDataSaver(status, asked)) return
-        prefs.edit().putBoolean(KEY_DATA_SAVER_ASKED, true).apply()
-        AlertDialog.Builder(activity)
-            .setTitle("Экономия трафика")
-            .setMessage(
-                "На 2G другие приложения могут съесть канал. Включите экономию трафика " +
-                    "и разрешите ZeroData без ограничений."
-            )
-            .setPositiveButton("Исключение ZeroData") { _, _ ->
-                openUnrestrictedDataSettings(activity)
-            }
-            .setNeutralButton("Экономия трафика") { _, _ ->
-                openDataSaverSettings(activity)
-            }
-            .setNegativeButton("Позже", null)
-            .show()
-    }
-
     fun currentDataSaverStatus(context: Context): DataSaverPromptStatus? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return null
         val cm = context.getSystemService(ConnectivityManager::class.java) ?: return null
@@ -110,23 +138,23 @@ object FirstRunOsPrompts {
         }
     }
 
-    fun openDataSaverSettings(activity: Activity) {
+    fun openDataSaverSettings(context: Context) {
         try {
-            activity.startActivity(Intent("android.settings.DATA_SAVER_SETTINGS"))
+            context.startActivity(Intent("android.settings.DATA_SAVER_SETTINGS"))
         } catch (e: Exception) {
             Timber.e(e, "Could not open Data Saver settings")
         }
     }
 
-    fun openUnrestrictedDataSettings(activity: Activity) {
+    fun openUnrestrictedDataSettings(context: Context) {
         try {
             val intent = Intent(Settings.ACTION_IGNORE_BACKGROUND_DATA_RESTRICTIONS_SETTINGS).apply {
-                data = Uri.parse("package:${activity.packageName}")
+                data = Uri.parse("package:${context.packageName}")
             }
-            activity.startActivity(intent)
+            context.startActivity(intent)
         } catch (e: Exception) {
             Timber.e(e, "Could not open unrestricted-data settings")
-            openDataSaverSettings(activity)
+            openDataSaverSettings(context)
         }
     }
 }
