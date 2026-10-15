@@ -19,6 +19,8 @@ object Constants {
     val MQTT_SERVER_URI: String = BuildConfig.MQTT_SERVER_URI
     const val MQTT_KEEP_ALIVE_SECONDS = 60
     const val MQTT_CONNECTION_TIMEOUT_SECONDS = 30
+    const val MQTT_WATCHDOG_INTERVAL_MS = 15_000L
+    const val MQTT_RECONNECT_MIN_INTERVAL_MS = 15_000L
     const val TOPIC_PREFIX = "zerodata/users"
     const val TOPIC_INBOX_SUFFIX = "inbox"
     const val TOPIC_LOBBY = "zerodata/public/lobby"

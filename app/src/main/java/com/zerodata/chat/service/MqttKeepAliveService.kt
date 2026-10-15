@@ -15,6 +15,15 @@ import androidx.core.app.ServiceCompat
 import com.zerodata.chat.MainActivity
 import com.zerodata.chat.R
 import com.zerodata.chat.repository.ChatRepository
+import com.zerodata.chat.util.Constants
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 
 /**
@@ -24,13 +33,26 @@ import org.koin.android.ext.android.inject
 class MqttKeepAliveService : Service() {
 
     private val repository: ChatRepository by inject()
+    private val watchdogScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private var watchdogJob: Job? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
-        // Touch the singleton so connect() from repository init stays alive with this process.
         repository.connectionStatus
+        watchdogJob = watchdogScope.launch {
+            while (isActive) {
+                delay(Constants.MQTT_WATCHDOG_INTERVAL_MS)
+                repository.ensureConnected()
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        watchdogJob?.cancel()
+        watchdogScope.cancel()
+        super.onDestroy()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

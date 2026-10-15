@@ -43,4 +43,9 @@ interface ChatRepository {
      * Открытый чат: входящие помечаются прочитанными (ACK на 2G).
      */
     fun setActiveChat(chatId: String?)
+
+    /**
+     * Watchdog / FGS: reconnect MQTT if the socket dropped.
+     */
+    fun ensureConnected()
 }

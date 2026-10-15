@@ -9,6 +9,7 @@ import com.zerodata.chat.model.MessageType
 import com.zerodata.chat.network.MqttInbound
 import com.zerodata.chat.network.MqttManager
 import com.zerodata.chat.network.ReceiptKind
+import com.zerodata.chat.util.Constants
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -43,6 +44,7 @@ class ChatRepositoryImplTest {
     private val chatsWithLastMessage = MutableStateFlow<List<ChatWithLastMessage>>(emptyList())
 
     private val currentUserId = "me"
+    private var nowMs = 1_000_000L
     private lateinit var repository: ChatRepositoryImpl
 
     @Before
@@ -54,7 +56,14 @@ class ChatRepositoryImplTest {
         every { chatDao.getChatsWithLastMessageFlow() } returns chatsWithLastMessage
         every { messageDao.getMessagesForChatFlow(any()) } returns flowOf(emptyList())
         coEvery { messageDao.getOutgoingPending(any(), any()) } returns emptyList()
-        repository = ChatRepositoryImpl(mqttManager, currentUserId, chatDao, messageDao, testScope)
+        nowMs = 1_000_000L
+        repository = ChatRepositoryImpl(
+            mqttManager,
+            currentUserId,
+            chatDao,
+            messageDao,
+            testScope,
+        ) { nowMs }
     }
 
     @After
@@ -373,6 +382,27 @@ class ChatRepositoryImplTest {
 
         coVerify(exactly = 0) { messageDao.updateStatus("out-3", MessageStatus.DELIVERED) }
 
+        coroutineContext.cancelChildren()
+    }
+
+    @Test
+    fun `ensureConnected skips while MQTT is up`() = testScope.runTest {
+        connectionStatus.value = true
+        advanceUntilIdle()
+        nowMs += Constants.MQTT_RECONNECT_MIN_INTERVAL_MS
+        repository.ensureConnected()
+        advanceUntilIdle()
+        coVerify(exactly = 1) { mqttManager.connect() }
+        coroutineContext.cancelChildren()
+    }
+
+    @Test
+    fun `ensureConnected reconnects after min interval when down`() = testScope.runTest {
+        advanceUntilIdle()
+        nowMs += Constants.MQTT_RECONNECT_MIN_INTERVAL_MS
+        repository.ensureConnected()
+        advanceUntilIdle()
+        coVerify(exactly = 2) { mqttManager.connect() }
         coroutineContext.cancelChildren()
     }
 

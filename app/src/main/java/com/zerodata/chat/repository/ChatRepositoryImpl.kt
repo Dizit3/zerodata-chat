@@ -12,6 +12,8 @@ import com.zerodata.chat.network.MqttInbound
 import com.zerodata.chat.network.MqttMessagingManager
 import com.zerodata.chat.network.ReceiptKind
 import com.zerodata.chat.util.ChatUtils
+import com.zerodata.chat.util.Constants
+import com.zerodata.chat.util.MqttWatchdog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -26,7 +28,8 @@ class ChatRepositoryImpl(
     private val currentUserId: String,
     private val chatDao: ChatDao,
     private val messageDao: MessageDao,
-    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main),
+    private val nowMillis: () -> Long = { System.currentTimeMillis() },
 ) : ChatRepository {
 
     override val allChats: StateFlow<List<Chat>> = chatDao.getChatsWithLastMessageFlow()
@@ -49,8 +52,11 @@ class ChatRepositoryImpl(
     @Volatile
     private var activeChatId: String? = null
 
+    @Volatile
+    private var lastConnectAttemptMs: Long = 0L
+
     init {
-        // Инициируем подключение
+        lastConnectAttemptMs = nowMillis()
         scope.launch {
             mqttManager.connect()
         }
@@ -118,6 +124,22 @@ class ChatRepositoryImpl(
     override fun clearUnread(chatId: String) {
         scope.launch {
             chatDao.updateUnreadCount(chatId, 0)
+        }
+    }
+
+    override fun ensureConnected() {
+        val now = nowMillis()
+        if (!MqttWatchdog.shouldAttempt(
+                _connectionStatus.value,
+                now - lastConnectAttemptMs,
+                Constants.MQTT_RECONNECT_MIN_INTERVAL_MS,
+            )
+        ) {
+            return
+        }
+        lastConnectAttemptMs = now
+        scope.launch {
+            mqttManager.connect()
         }
     }
 

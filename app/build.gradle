@@ -4,6 +4,7 @@ plugins {
     id 'org.jetbrains.kotlin.plugin.compose'
     id 'org.jetbrains.kotlin.plugin.serialization' version '2.1.0'
     id 'com.google.devtools.ksp'
+    id 'jacoco'
 }
 
 android {
@@ -14,8 +15,8 @@ android {
         applicationId "com.zerodata.chat"
         minSdk 24
         targetSdk 35
-        versionCode 5
-        versionName "0.3.0-pre.3"
+        versionCode 6
+        versionName "0.3.0-pre.4"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -57,6 +58,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            enableUnitTestCoverage true
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -149,4 +153,43 @@ dependencies {
     
     // Logging
     implementation 'com.jakewharton.timber:timber:5.0.1'
+}
+
+tasks.withType(Test).configureEach {
+    jacoco {
+        includeNoLocationClasses true
+        excludes = ['jdk.internal.*']
+    }
+}
+
+def jacocoExcludes = [
+    '**/R.class',
+    '**/R$*.class',
+    '**/BuildConfig.*',
+    '**/Manifest*.*',
+    '**/*Test*.*',
+    '**/databinding/**',
+    '**/*_Impl*.*',
+    '**/*_Factory*.*',
+]
+
+tasks.register('jacocoTestReport', JacocoReport) {
+    dependsOn 'testDebugUnitTest'
+    group = 'verification'
+    description = 'JaCoCo HTML/XML report for debug unit tests'
+
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = false
+    }
+
+    def kotlinClasses = fileTree(dir: layout.buildDirectory.dir('tmp/kotlin-classes/debug'), excludes: jacocoExcludes)
+    def javaClasses = fileTree(dir: layout.buildDirectory.dir('intermediates/javac/debug/classes'), excludes: jacocoExcludes)
+    classDirectories.setFrom(files([kotlinClasses, javaClasses]))
+    sourceDirectories.setFrom(files(['src/main/java']))
+    executionData.setFrom(fileTree(dir: layout.buildDirectory, includes: [
+        'jacoco/testDebugUnitTest.exec',
+        'outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec',
+    ]))
 }
