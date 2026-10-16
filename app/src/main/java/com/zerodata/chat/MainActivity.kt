@@ -2,19 +2,18 @@ package com.zerodata.chat
 
 import com.zerodata.chat.util.ChatUtils
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.zerodata.chat.network.RealMqttManager
 import com.zerodata.chat.ui.screens.ChatScreen
 import com.zerodata.chat.viewmodel.ChatViewModel
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import com.zerodata.chat.util.FirstRunOsPrompts
 import com.zerodata.chat.util.GlobalExceptionHandler
+import com.zerodata.chat.util.IncomingMessageNotifier
 
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -25,6 +24,7 @@ import com.zerodata.chat.ui.screens.ChatListScreen
 import com.zerodata.chat.ui.screens.UpdateScreen
 import com.zerodata.chat.viewmodel.MainViewModel
 import androidx.compose.foundation.layout.Box
+import kotlinx.coroutines.flow.MutableStateFlow
 
 import org.koin.androidx.compose.koinViewModel
 
@@ -35,6 +35,7 @@ class MainActivity : ComponentActivity() {
     
     // Inject the session userId
     private val userId: String by inject()
+    private val pendingOpenChatId = MutableStateFlow<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,11 +43,20 @@ class MainActivity : ComponentActivity() {
         // Включаем "улавливатель" всех вылетов
         GlobalExceptionHandler.initialize(applicationContext)
         FirstRunOsPrompts.requestIfNeeded(this)
+        pendingOpenChatId.value = intent.chatIdExtra()
         
         setContent {
 
                 val navController = rememberNavController()
                 val mainViewModel: MainViewModel = koinViewModel()
+                val openChatId by pendingOpenChatId.collectAsState()
+                LaunchedEffect(openChatId) {
+                    val chatId = openChatId ?: return@LaunchedEffect
+                    navController.navigate("chat/$chatId") {
+                        launchSingleTop = true
+                    }
+                    pendingOpenChatId.value = null
+                }
 
                 NavHost(navController = navController, startDestination = "hub") {
                     composable("hub") {
@@ -127,8 +137,17 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        pendingOpenChatId.value = intent.chatIdExtra()
+    }
+
     override fun onResume() {
         super.onResume()
         FirstRunOsPrompts.requestDataSaverStepsIfNeeded(this)
     }
+
+    private fun Intent.chatIdExtra(): String? =
+        getStringExtra(IncomingMessageNotifier.EXTRA_CHAT_ID)?.takeIf { it.isNotBlank() }
 }

@@ -10,10 +10,12 @@ import com.zerodata.chat.network.MqttInbound
 import com.zerodata.chat.network.MqttManager
 import com.zerodata.chat.network.ReceiptKind
 import com.zerodata.chat.util.Constants
+import com.zerodata.chat.util.IncomingMessageNotifier
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancelChildren
@@ -44,6 +46,7 @@ class ChatRepositoryImplTest {
     private val chatsWithLastMessage = MutableStateFlow<List<ChatWithLastMessage>>(emptyList())
 
     private val currentUserId = "me"
+    private val incomingNotifier: IncomingMessageNotifier = mockk(relaxed = true)
     private var nowMs = 1_000_000L
     private lateinit var repository: ChatRepositoryImpl
 
@@ -62,6 +65,7 @@ class ChatRepositoryImplTest {
             currentUserId,
             chatDao,
             messageDao,
+            incomingNotifier,
             testScope,
         ) { nowMs }
     }
@@ -284,6 +288,9 @@ class ChatRepositoryImplTest {
         advanceUntilIdle()
 
         coVerify { mqttManager.sendReceipt("friend", ReceiptKind.DELIVERED, "in-1") }
+        verify {
+            incomingNotifier.notifyIncoming("friend_me", "friend", "Hello")
+        }
 
         coroutineContext.cancelChildren()
     }
@@ -305,7 +312,17 @@ class ChatRepositoryImplTest {
         advanceUntilIdle()
 
         coVerify { mqttManager.sendReceipt("friend", ReceiptKind.READ, "in-2") }
+        verify(exactly = 0) { incomingNotifier.notifyIncoming(any(), any(), any()) }
 
+        coroutineContext.cancelChildren()
+    }
+
+    @Test
+    fun `opening a chat cancels its incoming notification`() = testScope.runTest {
+        coEvery { messageDao.getIncomingForChat(any(), any()) } returns emptyList()
+        repository.setActiveChat("friend_me")
+        advanceUntilIdle()
+        verify { incomingNotifier.cancel("friend_me") }
         coroutineContext.cancelChildren()
     }
 

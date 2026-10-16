@@ -3,4 +3,5 @@
     <string name="mqtt_keepalive_channel">Connection</string>
     <string name="mqtt_keepalive_title">ZeroData connected</string>
     <string name="mqtt_keepalive_text">Inbox stays online in the background</string>
+    <string name="incoming_message_channel">Messages</string>
 </resources>

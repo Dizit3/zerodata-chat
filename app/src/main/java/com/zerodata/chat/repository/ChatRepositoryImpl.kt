@@ -13,7 +13,10 @@ import com.zerodata.chat.network.MqttMessagingManager
 import com.zerodata.chat.network.ReceiptKind
 import com.zerodata.chat.util.ChatUtils
 import com.zerodata.chat.util.Constants
+import com.zerodata.chat.util.IncomingMessageNotifier
+import com.zerodata.chat.util.IncomingNotificationPolicy
 import com.zerodata.chat.util.MqttWatchdog
+import com.zerodata.chat.util.NoOpIncomingMessageNotifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -28,6 +31,7 @@ class ChatRepositoryImpl(
     private val currentUserId: String,
     private val chatDao: ChatDao,
     private val messageDao: MessageDao,
+    private val incomingNotifier: IncomingMessageNotifier = NoOpIncomingMessageNotifier(),
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main),
     private val nowMillis: () -> Long = { System.currentTimeMillis() },
 ) : ChatRepository {
@@ -146,6 +150,7 @@ class ChatRepositoryImpl(
     override fun setActiveChat(chatId: String?) {
         activeChatId = chatId
         if (chatId != null) {
+            incomingNotifier.cancel(chatId)
             scope.launch {
                 chatDao.updateUnreadCount(chatId, 0)
                 sendReadReceipts(chatId)
@@ -159,6 +164,15 @@ class ChatRepositoryImpl(
         val chatId = ChatUtils.getCanonicalChatId(message.senderId, message.receiverId)
         val kind = if (activeChatId == chatId) ReceiptKind.READ else ReceiptKind.DELIVERED
         mqttManager.sendReceipt(message.senderId, kind, message.id)
+        if (IncomingNotificationPolicy.shouldNotify(
+                senderId = message.senderId,
+                currentUserId = currentUserId,
+                chatId = chatId,
+                activeChatId = activeChatId,
+            )
+        ) {
+            incomingNotifier.notifyIncoming(chatId, message.senderId, message.text)
+        }
     }
 
     private suspend fun applyReceipt(receipt: MqttInbound.Receipt) {
