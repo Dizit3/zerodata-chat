@@ -75,6 +75,9 @@ class MainActivity : ComponentActivity() {
                                     mainViewModel.clearUnread(chatId)
                                     navController.navigate("chat/$chatId") 
                                 },
+                                onChatDelete = { chatId ->
+                                    mainViewModel.deleteChat(chatId)
+                                },
                                 onAddChatClick = { recipientId ->
                                     mainViewModel.createChat(recipientId)
                                     val chatId = ChatUtils.getCanonicalChatId(userId, recipientId)

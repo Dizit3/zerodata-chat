@@ -3,6 +3,10 @@ package com.zerodata.chat.ui.screens
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import com.zerodata.chat.model.Message
+import com.zerodata.chat.model.MessageStatus
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -55,6 +59,57 @@ class ChatScreenTest {
         composeTestRule.onNodeWithContentDescription("Send").performClick()
 
         // Then
-        assert(capturedText == "Hello World")
+        assertEquals("Hello World", capturedText)
+    }
+
+    @Test
+    fun chatScreen_emptySend_doesNotCallCallback() {
+        var sent = false
+        composeTestRule.setContent {
+            ChatScreen(
+                userId = "me",
+                messages = emptyList(),
+                onSendMessage = { sent = true },
+                onBack = {},
+            )
+        }
+        composeTestRule.onNodeWithContentDescription("Send").performClick()
+        assertFalse(sent)
+    }
+
+    @Test
+    fun chatScreen_back_callsOnBack() {
+        var back = false
+        composeTestRule.setContent {
+            ChatScreen(
+                userId = "me",
+                messages = emptyList(),
+                onSendMessage = {},
+                onBack = { back = true },
+            )
+        }
+        composeTestRule.onNodeWithContentDescription("Назад").performClick()
+        assertTrue(back)
+    }
+
+    @Test
+    fun chatScreen_ownMessages_showDeliveryTicks() {
+        composeTestRule.setContent {
+            ChatScreen(
+                userId = "me",
+                messages = listOf(
+                    Message(chatId = "c", senderId = "me", text = "sent", status = MessageStatus.SENT),
+                    Message(chatId = "c", senderId = "me", text = "delivered", status = MessageStatus.DELIVERED),
+                    Message(chatId = "c", senderId = "me", text = "read", status = MessageStatus.READ),
+                    Message(chatId = "c", senderId = "friend", text = "incoming"),
+                ),
+                onSendMessage = {},
+                onBack = {},
+            )
+        }
+        composeTestRule.onNodeWithContentDescription("SENT").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("DELIVERED").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("READ").assertIsDisplayed()
+        composeTestRule.onNodeWithText("incoming").assertIsDisplayed()
     }
 }

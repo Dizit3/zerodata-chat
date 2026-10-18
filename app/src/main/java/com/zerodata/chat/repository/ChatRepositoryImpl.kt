@@ -125,6 +125,17 @@ class ChatRepositoryImpl(
         }
     }
 
+    override fun deleteChat(chatId: String) {
+        incomingNotifier.cancel(chatId)
+        if (activeChatId == chatId) {
+            activeChatId = null
+        }
+        scope.launch {
+            messageDao.deleteMessagesForChat(chatId)
+            chatDao.deleteChat(chatId)
+        }
+    }
+
     override fun clearUnread(chatId: String) {
         scope.launch {
             chatDao.updateUnreadCount(chatId, 0)

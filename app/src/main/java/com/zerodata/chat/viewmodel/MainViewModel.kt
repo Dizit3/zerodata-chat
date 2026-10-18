@@ -80,6 +80,10 @@ class MainViewModel(
     fun createChat(recipientId: String) {
         repository.createChat(recipientId)
     }
+
+    fun deleteChat(chatId: String) {
+        repository.deleteChat(chatId)
+    }
     
     fun clearUnread(chatId: String) {
         repository.clearUnread(chatId)

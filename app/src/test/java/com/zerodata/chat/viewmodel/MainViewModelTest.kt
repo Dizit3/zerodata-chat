@@ -85,6 +85,16 @@ class MainViewModelTest {
     }
 
     @Test
+    fun `when deleteChat is called then delegates to repository`() = runTest(testDispatcher) {
+        viewModel = MainViewModel(repository, context, updateManager)
+
+        viewModel.deleteChat("friend_me")
+        advanceUntilIdle()
+
+        verify { repository.deleteChat("friend_me") }
+    }
+
+    @Test
     fun `dismissUpdate and startUpdateFlow toggle flags`() = runTest(testDispatcher) {
         val release = GitHubRelease(tagName = "v0.4.0")
         coEvery { updateManager.checkForUpdates(any(), any()) } returns release

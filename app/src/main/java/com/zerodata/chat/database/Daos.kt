@@ -45,6 +45,9 @@ interface MessageDao {
 
     @Query("SELECT * FROM messages WHERE chatId = :chatId AND senderId != :userId")
     suspend fun getIncomingForChat(chatId: String, userId: String): List<MessageEntity>
+
+    @Query("DELETE FROM messages WHERE chatId = :chatId")
+    suspend fun deleteMessagesForChat(chatId: String)
 }
 
 data class ChatWithLastMessage(

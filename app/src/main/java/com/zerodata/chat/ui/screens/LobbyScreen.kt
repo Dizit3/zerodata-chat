@@ -23,7 +23,19 @@ fun LobbyScreen(
     onBack: () -> Unit
 ) {
     val users by viewModel.users.collectAsState()
+    LobbyContent(
+        users = users,
+        onUserClick = onUserClick,
+        onBack = onBack,
+    )
+}
 
+@Composable
+fun LobbyContent(
+    users: List<String>,
+    onUserClick: (String) -> Unit,
+    onBack: () -> Unit,
+) {
     Scaffold(
         topBar = {
             ZeroDataTopBar(

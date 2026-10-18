@@ -1,7 +1,8 @@
 package com.zerodata.chat.ui.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
@@ -19,12 +20,17 @@ import com.zerodata.chat.model.Chat
 /**
  * Элемент списка чатов.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ChatListItem(chat: Chat, onClick: () -> Unit) {
+fun ChatListItem(
+    chat: Chat,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit = {},
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

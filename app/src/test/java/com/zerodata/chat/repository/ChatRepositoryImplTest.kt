@@ -327,6 +327,16 @@ class ChatRepositoryImplTest {
     }
 
     @Test
+    fun `deleteChat removes messages then chat`() = testScope.runTest {
+        repository.deleteChat("friend_me")
+        advanceUntilIdle()
+        verify { incomingNotifier.cancel("friend_me") }
+        coVerify { messageDao.deleteMessagesForChat("friend_me") }
+        coVerify { chatDao.deleteChat("friend_me") }
+        coroutineContext.cancelChildren()
+    }
+
+    @Test
     fun `delivery receipt upgrades SENT to DELIVERED`() = testScope.runTest {
         coEvery { messageDao.getById("out-1") } returns MessageEntity(
             id = "out-1",

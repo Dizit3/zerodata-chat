@@ -34,6 +34,7 @@ fun ChatListScreen(
     chats: List<Chat>,
     connectionStatus: Boolean,
     onChatClick: (String) -> Unit,
+    onChatDelete: (String) -> Unit = {},
     onAddChatClick: (String) -> Unit,
     onLobbyClick: () -> Unit,
     updateAvailable: GitHubRelease? = null,
@@ -42,6 +43,7 @@ fun ChatListScreen(
     onDismissUpdate: () -> Unit = {}
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
+    var chatPendingDelete by remember { mutableStateOf<Chat?>(null) }
     var showDataSaverHelp by remember { mutableStateOf(false) }
     
     val clipboardManager = LocalClipboardManager.current
@@ -69,6 +71,23 @@ fun ChatListScreen(
             onDismiss = { showDataSaverHelp = false },
             onOpenSaver = { FirstRunOsPrompts.openDataSaverSettings(context) },
             onOpenException = { FirstRunOsPrompts.openUnrestrictedDataSettings(context) },
+        )
+    }
+
+    chatPendingDelete?.let { pending ->
+        AlertDialog(
+            onDismissRequest = { chatPendingDelete = null },
+            title = { Text("Удалить чат?") },
+            text = { Text("Чат с ${pending.name} исчезнет только на этом телефоне. Новые сообщения снова создадут диалог.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    onChatDelete(pending.id)
+                    chatPendingDelete = null
+                }) { Text("Удалить") }
+            },
+            dismissButton = {
+                TextButton(onClick = { chatPendingDelete = null }) { Text("Отмена") }
+            },
         )
     }
 
@@ -133,7 +152,11 @@ fun ChatListScreen(
                 .padding(padding)
         ) {
             items(chats) { chat ->
-                ChatListItem(chat = chat, onClick = { onChatClick(chat.id) })
+                ChatListItem(
+                    chat = chat,
+                    onClick = { onChatClick(chat.id) },
+                    onLongClick = { chatPendingDelete = chat },
+                )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.White.copy(alpha = 0.1f))
             }
         }

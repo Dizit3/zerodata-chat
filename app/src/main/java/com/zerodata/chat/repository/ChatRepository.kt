@@ -35,6 +35,11 @@ interface ChatRepository {
     fun createChat(recipientId: String)
 
     /**
+     * Удалить чат и его сообщения только на этом устройстве.
+     */
+    fun deleteChat(chatId: String)
+
+    /**
      * Сбросить счетчик непрочитанных для чата.
      */
     fun clearUnread(chatId: String)
