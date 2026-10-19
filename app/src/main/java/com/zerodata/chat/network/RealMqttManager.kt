@@ -6,6 +6,8 @@ import com.zerodata.chat.model.LobbyPresence
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import com.zerodata.chat.util.Constants
+import com.zerodata.chat.util.MqttDiagReporter
+import com.zerodata.chat.util.NoOpMqttDiagReporter
 import info.mqtt.android.service.MqttAndroidClient
 import org.eclipse.paho.client.mqttv3.*
 import timber.log.Timber
@@ -13,7 +15,8 @@ import timber.log.Timber
 class RealMqttManager(
     private val context: Context,
     private val userId: String,
-    private val payloadMapper: MqttPayloadMapper = MqttPayloadMapperImpl()
+    private val payloadMapper: MqttPayloadMapper = MqttPayloadMapperImpl(),
+    private val diagReporter: MqttDiagReporter = NoOpMqttDiagReporter(),
 ) : MqttManager {
     
     private val serverUri = Constants.MQTT_SERVER_URI
@@ -25,6 +28,7 @@ class RealMqttManager(
 
     private val _incomingMessages = MutableSharedFlow<Message>(extraBufferCapacity = 64)
     private val _inbound = MutableSharedFlow<MqttInbound>(extraBufferCapacity = 64)
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     override suspend fun connect() {
         if (mqttClient.isConnected) {
@@ -47,11 +51,13 @@ class RealMqttManager(
                     Timber.d("Connected successfully")
                     _connectionStatus.value = true
                     subscribeToTopics()
+                    scope.launch { diagReporter.flush() }
                 }
 
                 override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
                     Timber.e(exception, "Connection failed")
                     _connectionStatus.value = false
+                    report1883("fail", exception)
                 }
             })
 
@@ -61,12 +67,14 @@ class RealMqttManager(
                         Timber.d("Reconnected to $serverURI")
                         _connectionStatus.value = true
                         subscribeToTopics()
+                        scope.launch { diagReporter.flush() }
                     }
                 }
 
                 override fun connectionLost(cause: Throwable?) {
                     Timber.e(cause, "Connection lost")
                     _connectionStatus.value = false
+                    report1883("lost", cause)
                 }
 
                 override fun messageArrived(topic: String?, message: MqttMessage?) {
@@ -90,6 +98,13 @@ class RealMqttManager(
             })
         } catch (e: Exception) {
             Timber.e(e, "Error during connect")
+            report1883("fail", e)
+        }
+    }
+
+    private fun report1883(kind: String, error: Throwable?) {
+        scope.launch {
+            diagReporter.report(kind, error)
         }
     }
 
@@ -152,8 +167,7 @@ class RealMqttManager(
     }
 
     private val _lobbyPresences = MutableSharedFlow<LobbyPresence>(extraBufferCapacity = 64)
-    private var lobbyJob: kotlinx.coroutines.Job? = null
-    private val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO + kotlinx.coroutines.SupervisorJob())
+    private var lobbyJob: Job? = null
 
     override fun joinLobby() {
         if (lobbyJob != null) return

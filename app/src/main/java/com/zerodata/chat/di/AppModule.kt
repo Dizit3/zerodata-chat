@@ -10,8 +10,14 @@ import com.zerodata.chat.network.MqttPayloadMapperImpl
 import com.zerodata.chat.network.RealMqttManager
 import com.zerodata.chat.repository.ChatRepository
 import com.zerodata.chat.repository.ChatRepositoryImpl
+import com.zerodata.chat.BuildConfig
+import com.zerodata.chat.util.Constants
 import com.zerodata.chat.util.IncomingMessageNotifier
 import com.zerodata.chat.util.IncomingMessageNotifierImpl
+import com.zerodata.chat.util.MqttDiagReporter
+import com.zerodata.chat.util.MqttDiagReporterImpl
+import com.zerodata.chat.util.OkHttpDiagPoster
+import com.zerodata.chat.util.SharedPrefsDiagQueueStore
 import com.zerodata.chat.util.UpdateManager
 import com.zerodata.chat.viewmodel.ChatViewModel
 import com.zerodata.chat.viewmodel.LobbyViewModel
@@ -33,7 +39,16 @@ val appModule = module {
     // Mappers
     // Network
     single<MqttPayloadMapper> { MqttPayloadMapperImpl() }
-    single { RealMqttManager(get(), get(), get()) }
+    single<MqttDiagReporter> {
+        MqttDiagReporterImpl(
+            mqttUri = Constants.MQTT_SERVER_URI,
+            ingestUrl = BuildConfig.DIAG_INGEST_URL,
+            clientId = Constants.mqttClientId(get()),
+            store = SharedPrefsDiagQueueStore(androidContext()),
+            poster = OkHttpDiagPoster(),
+        )
+    }
+    single { RealMqttManager(get(), get(), get(), get()) }
     single<MqttManager> { get<RealMqttManager>() }
     single<MqttMessagingManager> { get<RealMqttManager>() }
     single<MqttDiscoveryManager> { get<RealMqttManager>() }

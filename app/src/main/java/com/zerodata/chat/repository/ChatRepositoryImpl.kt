@@ -242,16 +242,17 @@ class ChatRepositoryImpl(
         
         val otherUserId = if (message.senderId == currentUserId) message.receiverId else message.senderId
         val isIncoming = message.senderId != currentUserId
+        val viewingThisChat = activeChatId == chatId
 
         if (chat == null) {
             chatDao.insertChat(
                 ChatEntity(
                     id = chatId,
                     name = otherUserId,
-                    unreadCount = if (isIncoming) 1 else 0
+                    unreadCount = if (isIncoming && !viewingThisChat) 1 else 0
                 )
             )
-        } else if (isIncoming) {
+        } else if (isIncoming && !viewingThisChat) {
             chatDao.updateUnreadCount(chatId, chat.unreadCount + 1)
         }
     }

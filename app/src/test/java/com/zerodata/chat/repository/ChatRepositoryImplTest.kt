@@ -318,6 +318,33 @@ class ChatRepositoryImplTest {
     }
 
     @Test
+    fun `incoming while chat is open does not increment unread`() = testScope.runTest {
+        seedExistingChat(unread = 0)
+        launch { repository.allChats.collect { } }
+        coEvery { messageDao.getIncomingForChat(any(), any()) } returns emptyList()
+        repository.setActiveChat("friend_me")
+        advanceUntilIdle()
+
+        inboundFlow.emit(
+            MqttInbound.ChatMessage(
+                Message(
+                    id = "in-open",
+                    chatId = "ignored",
+                    senderId = "friend",
+                    receiverId = currentUserId,
+                    text = "Hello",
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        coVerify { mqttManager.sendReceipt("friend", ReceiptKind.READ, "in-open") }
+        coVerify(exactly = 0) { chatDao.updateUnreadCount("friend_me", match { it > 0 }) }
+
+        coroutineContext.cancelChildren()
+    }
+
+    @Test
     fun `opening a chat cancels its incoming notification`() = testScope.runTest {
         coEvery { messageDao.getIncomingForChat(any(), any()) } returns emptyList()
         repository.setActiveChat("friend_me")

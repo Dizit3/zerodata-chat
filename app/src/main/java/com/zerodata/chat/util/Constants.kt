@@ -17,6 +17,7 @@ object Constants {
      * ssl:// — системное хранилище сертификатов (Let's Encrypt и т.п.).
      */
     val MQTT_SERVER_URI: String = BuildConfig.MQTT_SERVER_URI
+    val DIAG_INGEST_URL: String = BuildConfig.DIAG_INGEST_URL
     const val MQTT_KEEP_ALIVE_SECONDS = 60
     const val MQTT_CONNECTION_TIMEOUT_SECONDS = 30
     const val MQTT_WATCHDOG_INTERVAL_MS = 15_000L

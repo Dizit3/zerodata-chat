@@ -15,8 +15,8 @@ android {
         applicationId "com.zerodata.chat"
         minSdk 24
         targetSdk 35
-        versionCode 8
-        versionName "0.3.0-pre.6"
+        versionCode 9
+        versionName "0.3.0-pre.7"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -41,6 +41,25 @@ android {
             mqttUri = mqttUri.trim()
         }
         buildConfigField "String", "MQTT_SERVER_URI", "\"${mqttUri}\""
+
+        // HTTP ingest for MQTT :1883 errors (not MQTT). Empty disables.
+        // local.properties: diag.ingest.url=http://YOUR_ORACLE_IP/diag
+        def diagUrl = System.getenv("DIAG_INGEST_URL")
+        if (diagUrl == null || diagUrl.trim().isEmpty()) {
+            diagUrl = ""
+            def localFile = rootProject.file("local.properties")
+            if (localFile.exists()) {
+                def props = new Properties()
+                localFile.withInputStream { props.load(it) }
+                def overrideDiag = props.getProperty("diag.ingest.url")
+                if (overrideDiag != null && !overrideDiag.trim().isEmpty()) {
+                    diagUrl = overrideDiag.trim()
+                }
+            }
+        } else {
+            diagUrl = diagUrl.trim()
+        }
+        buildConfigField "String", "DIAG_INGEST_URL", "\"${diagUrl}\""
     }
 
     def uploadStoreFile = System.getenv("SIGNING_STORE_FILE")

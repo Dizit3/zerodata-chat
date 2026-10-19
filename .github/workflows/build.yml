@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       MQTT_SERVER_URI: ${{ vars.MQTT_SERVER_URI || 'tcp://129.151.220.171:1883' }}
+      DIAG_INGEST_URL: ${{ vars.DIAG_INGEST_URL || 'http://129.151.220.171/diag' }}
 
     steps:
     - uses: actions/checkout@v4
