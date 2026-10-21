@@ -2,8 +2,13 @@ local.properties
 *.iml
 .idea/
 .gradle/
+.kotlin/
 **/build/
+*.apk
+*.aab
+*.ap_
+.DS_Store
+Thumbs.db
 keystore/*.jks
 keystore/*.keystore
 _ks_*.txt
-

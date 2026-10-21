@@ -1,0 +1,21 @@
+---
+description: Room entities stay in the repository; chat I/O through ChatRepository
+globs: app/src/main/java/com/zerodata/chat/repository/**,app/src/main/java/com/zerodata/chat/database/**
+alwaysApply: false
+---
+
+# Repository and Room
+
+All chat I/O goes through `ChatRepository` / `ChatRepositoryImpl`. DAOs and `AppDatabase` are not used from ViewModels or Compose.
+
+Map `*Entity` → domain `Chat` / `Message` before leaving the repository. Domain models use `val` fields.
+
+```kotlin
+// BAD — Entity in a ViewModel
+val rows: StateFlow<List<MessageEntity>>
+
+// GOOD
+val messages: StateFlow<List<Message>>
+```
+
+Before changing repository or network logic, read `ChatRepositoryImpl.kt`.

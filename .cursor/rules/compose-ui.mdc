@@ -1,0 +1,21 @@
+---
+description: Compose screens stay presentational; no MQTT or Room from UI
+globs: app/src/main/java/com/zerodata/chat/ui/**
+alwaysApply: false
+---
+
+# Compose UI
+
+Screens capture events and render state from ViewModels. No MQTT, Room, or topic strings in `ui/`.
+
+Dark Material3 (`0xFF121212`). `AddChatDialog` / new-chat action stays a required hub function.
+
+```kotlin
+// BAD
+@Composable
+fun ChatScreen(mqtt: MqttManager) { mqtt.publish(...) }
+
+// GOOD
+@Composable
+fun ChatScreen(viewModel: ChatViewModel) { /* collect StateFlow, call viewModel.send */ }
+```

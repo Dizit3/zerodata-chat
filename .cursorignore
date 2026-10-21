@@ -68,3 +68,8 @@ local.properties
 # Add your custom patterns below:
 # myapp/secrets/
 # config/production.yml
+
+# Build/cache noise (do not hide Kotlin/XML sources)
+.gradle/
+.kotlin/
+**/build/

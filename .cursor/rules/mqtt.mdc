@@ -1,0 +1,21 @@
+---
+description: MQTT topics, compact wire format, and two-phone compatibility
+globs: app/src/main/java/com/zerodata/chat/network/**,**/Constants.kt
+alwaysApply: false
+---
+
+# MQTT
+
+Topic strings live only in `Constants.kt`. Do not hardcode `zerodata/...` elsewhere.
+
+```kotlin
+// BAD
+mqtt.publish("zerodata/users/$id/inbox", payload)
+
+// GOOD
+mqtt.publish("${Constants.TOPIC_PREFIX}/$id/${Constants.TOPIC_INBOX_SUFFIX}", payload)
+```
+
+On-the-wire chat JSON is compact keys (`i`, `f`, `t`, `x`, `ts`) via `CompactMessageWire` / `MqttPayloadMapper`. Changing the wire requires both test phones on the same build.
+
+Connection lifecycle stays in `MqttManager` implementations, driven through `ChatRepository`.

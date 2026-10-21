@@ -3,12 +3,14 @@ description: ZeroData Chat architecture invariants for agents
 alwaysApply: true
 ---
 
-Follow `.agent/rules.md` as the source of truth.
+# Architecture
 
-- UI is Jetpack Compose; ViewModels expose StateFlow; chat I/O goes through `ChatRepository` only.
-- Never call `MqttManager` or `AppDatabase` from UI or ViewModels for chat flows.
-- Personal chats use `ChatUtils.getCanonicalChatId(user1, user2)` (sorted ids joined by `_`). Never mint random 1:1 chat IDs.
+Compose UI → ViewModel (`StateFlow`) → `ChatRepository` only. Never call `MqttManager` or `AppDatabase` from UI or ViewModels for chat flows.
+
+- Personal chats: `ChatUtils.getCanonicalChatId(user1, user2)` (sorted ids joined by `_`). Never mint random 1:1 chat IDs.
 - Room entities stay inside the repository; map to `Chat` / `Message` before ViewModels.
-- MQTT topics live in `Constants.kt`. Payload format is JSON via `MqttPayloadMapper`.
+- MQTT topics live in `Constants.kt`. Payload JSON via `MqttPayloadMapper`.
 - Do not remove `GlobalExceptionHandler` or change `CrashActivity` unless the user asks.
-- Dark Material3 theme (`0xFF121212`). The Add-chat dialog is a required hub action.
+- Dark Material3 (`0xFF121212`). The Add-chat dialog is a required hub action.
+
+Details: root `AGENTS.md`. Obtainium tags: skill `obtainium-prerelease`, not this file.

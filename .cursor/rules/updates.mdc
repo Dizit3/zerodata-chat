@@ -1,0 +1,11 @@
+---
+description: GitHub Releases version compare for in-app updates
+globs: "**/UpdateManager.kt,**/UpdateSelector.kt,**/AppVersion.kt,**/GitHubApi.kt,**/UpdateScreen.kt"
+alwaysApply: false
+---
+
+# In-app updates
+
+`UpdateManager` / `UpdateSelector` / `AppVersion` compare GitHub Release tags. Do not change ordering or prerelease parsing without understanding existing tags (`v0.3.0-pre.N`).
+
+Obtainium installs those same GitHub Releases. Shipping a new APK is the `obtainium-prerelease` skill, not a change to compare logic.
